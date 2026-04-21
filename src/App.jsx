@@ -7,7 +7,6 @@ const NAV_ITEMS = [
   { id: "phantich", label: "Phân tích" },
   { id: "giaiphap", label: "Giải pháp" },
   { id: "game", label: "Mini-game" },
-  { id: "quiz", label: "Tranh luận" },
   { id: "nghiencuu", label: "Nghiên cứu" },
   { id: "ketluan", label: "Kết luận" }
 ];
@@ -170,46 +169,6 @@ const SOLUTION_ITEMS = [
       "Hàm ý: lộ trình giá theo thị trường đi kèm gói hỗ trợ nhóm dễ tổn thương, tránh sốc giá lên hộ thu nhập thấp."
   }
 ];
-
-const SCENARIOS = [
-  {
-    id: "scenario-1",
-    title: "Tình huống 1 — Bình ổn giá điện khi lạm phát",
-    description:
-      "Giá nhiên liệu thế giới tăng nhanh, thu nhập hộ gia đình phục hồi chậm. EVN nên được yêu cầu làm gì?",
-    options: [
-      { key: "a", label: "A. Giữ giá thấp đồng loạt cho mọi nhóm khách hàng", result: "mixed" },
-      { key: "b", label: "B. Điều chỉnh có lộ trình + trợ cấp trực tiếp hộ yếu thế", result: "good" }
-    ]
-  },
-  {
-    id: "scenario-2",
-    title: "Tình huống 2 — Mở cạnh tranh trong ngành điện",
-    description:
-      "Nhu cầu điện tăng mạnh theo công nghiệp hóa. Có nên mở rộng khu vực tư nhân ở khâu phát điện không?",
-    options: [
-      { key: "a", label: "A. Có — nhưng giữ điều độ và truyền tải dưới kiểm soát nhà nước", result: "good" },
-      { key: "b", label: "B. Không — duy trì mô hình tích hợp tập trung như hiện tại", result: "mixed" }
-    ]
-  },
-  {
-    id: "scenario-3",
-    title: "Tình huống 3 — Cấu trúc sở hữu doanh nghiệp hạ tầng số",
-    description:
-      "Trong giai đoạn chuyển đổi số sâu, cấu trúc sở hữu nào cân bằng giữa kiểm soát chiến lược và hiệu quả quản trị?",
-    options: [
-      { key: "a", label: "A. Giữ 100% vốn nhà nước ở hầu hết các khâu", result: "mixed" },
-      { key: "b", label: "B. Nhà nước chi phối lõi độc quyền, mở sở hữu hỗn hợp ở khâu cạnh tranh", result: "good" }
-    ]
-  }
-];
-
-const QUIZ_FEEDBACK = {
-  good:
-    "Lựa chọn theo hướng cân bằng: tín hiệu thị trường vẫn hoạt động nhưng nhóm dễ tổn thương được bảo vệ và ổn định vĩ mô được giữ.",
-  mixed:
-    "Có thể đạt mục tiêu ngắn hạn, nhưng rủi ro dài hạn là méo mó tín hiệu giá hoặc làm giảm động lực nâng cao hiệu quả."
-};
 
 const RESEARCH_LINKS = [
   {
@@ -425,7 +384,6 @@ function App() {
   const [activeTheoryId, setActiveTheoryId] = useState(THEORY_ITEMS[0].id);
   const [modalGroupId, setModalGroupId] = useState(null);
   const [openAccordions, setOpenAccordions] = useState([SOLUTION_ITEMS[0].id]);
-  const [quizAnswers, setQuizAnswers] = useState({});
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState(NAV_ITEMS[0].id);
 
@@ -438,13 +396,6 @@ function App() {
     () => GROUP_ITEMS.find((item) => item.id === modalGroupId) || null,
     [modalGroupId]
   );
-
-  const quizStats = useMemo(() => {
-    const answers = Object.values(quizAnswers);
-    const good = answers.filter((item) => item.result === "good").length;
-    const mixed = answers.filter((item) => item.result === "mixed").length;
-    return { good, mixed, answered: answers.length };
-  }, [quizAnswers]);
 
   useEffect(() => {
     if (route !== "home") {
@@ -522,13 +473,6 @@ function App() {
     setOpenAccordions((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
-  };
-
-  const chooseOption = (scenarioId, optionKey, result) => {
-    setQuizAnswers((prev) => ({
-      ...prev,
-      [scenarioId]: { optionKey, result }
-    }));
   };
 
   if (route === "game") {
@@ -876,65 +820,6 @@ function App() {
                     <p className="tv-value">07 / 12</p>
                     <div className="tv-bar"><span style={{ width: "58%" }} /></div>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="quiz">
-          <div className="container">
-            <div className="section-head" data-reveal="">
-              <p className="section-tag">Tranh luận lớp học</p>
-              <h2 className="section-title">Bạn sẽ chọn chính sách nào?</h2>
-              <p className="section-sub">
-                Mỗi lựa chọn đều có đánh đổi. Bấm A hoặc B để xem phản hồi và thảo luận ngay trên lớp.
-              </p>
-            </div>
-
-            <div className="quiz-wrap">
-              {SCENARIOS.map((scenario) => {
-                const answer = quizAnswers[scenario.id];
-
-                return (
-                  <article className="scenario" data-reveal="" key={scenario.id}>
-                    <h4>{scenario.title}</h4>
-                    <p>{scenario.description}</p>
-                    <div className="choice-row">
-                      {scenario.options.map((option) => (
-                        <button
-                          key={option.key}
-                          className={`choice ${answer?.optionKey === option.key ? "selected" : ""}`}
-                          type="button"
-                          onClick={() => chooseOption(scenario.id, option.key, option.result)}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div
-                      className={`scenario-result ${answer ? "show" : ""} ${
-                        answer?.result === "good" ? "good" : ""
-                      }`}
-                    >
-                      {answer ? QUIZ_FEEDBACK[answer.result] : ""}
-                    </div>
-                  </article>
-                );
-              })}
-
-              <div className="stats" data-reveal="">
-                <div className="stat">
-                  <p className="stat-value">{quizStats.good}</p>
-                  <p className="stat-label">Lựa chọn cân bằng</p>
-                </div>
-                <div className="stat">
-                  <p className="stat-value">{quizStats.mixed}</p>
-                  <p className="stat-label">Lựa chọn cần đánh đổi</p>
-                </div>
-                <div className="stat">
-                  <p className="stat-value">{quizStats.answered}</p>
-                  <p className="stat-label">Tình huống đã trả lời</p>
                 </div>
               </div>
             </div>
