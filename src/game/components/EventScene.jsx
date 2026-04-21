@@ -234,6 +234,7 @@ function SignalMiniGame() {
       <button
         type="button"
         aria-label="Ổn định tín hiệu"
+        title="Nhấn để khóa tín hiệu - Tương tác tùy chọn để ổn định kết nối"
         onClick={() => setCharge((value) => Math.min(3, value + 1))}
       >
         <span className="psim-mini-core" />

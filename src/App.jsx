@@ -351,6 +351,57 @@ function useRoute() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// GAME CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════
+const BLACK_SWAN_SPAWN_RATE = 0.20;
+const POLICY_PPP_ROIC_BUFF = 1.5;
+const POLICY_STABILIZE_CPI_REDUCTION = 0.4;
+const POLICY_STABILIZE_ROIC_PENALTY = 0.4;
+const POLICY_TAX_BUDGET_BOOST = 40;
+const POLICY_TAX_WELFARE_PENALTY = 3;
+const SAVE_KEY = 'policySimSave';
+
+// Shuffle array utility
+const shuffleArray = (array) => {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
+// Local storage utilities
+const loadGame = (setGameState, setQuarter, setStats, setHistory, setLogs, setEventIndex, setActivePolicies) => {
+  try {
+    const saved = localStorage.getItem(SAVE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      setGameState(data.gameState || "start");
+      setQuarter(data.quarter || 1);
+      setStats(data.stats || INIT_STATS);
+      setHistory(data.history || [INIT_STATS]);
+      setLogs(data.logs || INIT_LOGS);
+      setEventIndex(data.eventIndex || 0);
+      setActivePolicies(data.activePolicies || []);
+    }
+  } catch (e) {}
+};
+
+const saveGame = (gameState, quarter, stats, history, logs, eventIndex, activePolicies) => {
+  const data = {
+    gameState,
+    quarter,
+    stats,
+    history,
+    logs,
+    eventIndex,
+    activePolicies,
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // DỮ LIỆU SỰ KIỆN CHÍNH
 // ═══════════════════════════════════════════════════════════════════════════
 const GAME_EVENTS = [
@@ -364,7 +415,7 @@ const GAME_EVENTS = [
     intensity: "high",
     sceneLabel: "Lưới điện quốc gia",
     options: [
-      { label: "Giữ giá điện — chịu lỗ, lấy ngân sách bình ổn", description: "Khóa biểu giá, bơm quỹ bình ổn và ưu tiên hộ dân cư.", rationale: "Bảo vệ CPI, người dân không sốc giá.", previewAnimation: "money-flow", tone: "green", impact: { cpi: 0, cov: 2, roic: -4.5, bud: -15 }, logStr: "[EVN] Giữ nguyên giá. Hao hụt ngân sách lớn nhưng được lòng dân." },
+      { label: "Giữ giá điện — chịu lỗ, lấy ngân sách bình ổn", description: "Khóa biểu giá, bơm quỹ bình ổn và ưu tiên hộ dân cư.", rationale: "Bảo vệ CPI, người dân không sốc giá.", previewAnimation: "money-flow", tone: "green", impact: { cpi: 0, cov: 2, roic: -4.5, bud: -10 }, logStr: "[EVN] Giữ nguyên giá. Hao hụt ngân sách lớn nhưng được lòng dân." },
       { label: "Tăng giá điện 10% — theo tín hiệu thị trường", description: "Cho giá tăng theo chi phí đầu vào, giữ dòng vốn cho hạ tầng.", rationale: "Bảo vệ dòng vốn, nhưng lạm phát sẽ leo thang.", previewAnimation: "rising-chart", tone: "orange", impact: { cpi: 2.5, cov: -5, roic: 3.0, bud: 0 }, logStr: "[EVN] Tăng giá điện 10%. ROIC phục hồi nhưng lạm phát tăng mạnh." }
     ]
   },
@@ -392,7 +443,7 @@ const GAME_EVENTS = [
     intensity: "low",
     sceneLabel: "Hạ tầng viễn thông",
     options: [
-      { label: "Dùng 100% vốn tập đoàn triển khai thần tốc", description: "Đổ vốn chủ lực vào điểm lõm, kéo tín hiệu tới vùng sâu ngay lập tức.", rationale: "Chỉ số an sinh tăng vọt nhưng Ngân sách và ROIC đổ máu.", previewAnimation: "network", tone: "green", impact: { cpi: 0, cov: 6, roic: -4.0, bud: -18 }, logStr: "[VNPT] Phủ sóng thành công bằng vốn chủ. Cáp viễn thông tới tận bản làng." },
+      { label: "Dùng 100% vốn tập đoàn triển khai thần tốc", description: "Đổ vốn chủ lực vào điểm lõm, kéo tín hiệu tới vùng sâu ngay lập tức.", rationale: "Chỉ số an sinh tăng vọt nhưng Ngân sách và ROIC đổ máu.", previewAnimation: "network", tone: "green", impact: { cpi: 0, cov: 6, roic: -4.0, bud: -12 }, logStr: "[VNPT] Phủ sóng thành công bằng vốn chủ. Cáp viễn thông tới tận bản làng." },
       { label: "Hợp tác Viettel/MobiFone dùng chung hạ tầng", description: "Ghép mạng lõi, chia trạm và giảm chi phí triển khai từng vùng.", rationale: "Tiết kiệm ngân sách nhưng tiến độ phủ sóng chậm hơn.", previewAnimation: "network", tone: "blue", impact: { cpi: 0.5, cov: 2, roic: 1.0, bud: -5 }, logStr: "[VNPT] Liên minh dùng chung cáp. Ngân sách an toàn, độ phủ tăng vừa phải." }
     ]
   },
@@ -406,7 +457,7 @@ const GAME_EVENTS = [
     intensity: "high",
     sceneLabel: "Trung tâm tài chính",
     options: [
-      { label: "Bơm ngân sách mua nợ xấu qua VAMC", description: "Hấp thụ nợ xấu để tín dụng chảy lại, đổi bằng áp lực ngân khố.", rationale: "Giải cứu dòng tín dụng, nhưng tiêu tốn ngân sách quốc gia.", previewAnimation: "money-flow", tone: "green", impact: { cpi: -0.5, cov: 3, roic: -1.0, bud: -25 }, logStr: "[NHNN] Bơm tiền mua nợ xấu. Doanh nghiệp dễ thở hơn nhưng ngân khố vơi đi." },
+      { label: "Bơm ngân sách mua nợ xấu qua VAMC", description: "Hấp thụ nợ xấu để tín dụng chảy lại, đổi bằng áp lực ngân khố.", rationale: "Giải cứu dòng tín dụng, nhưng tiêu tốn ngân sách quốc gia.", previewAnimation: "money-flow", tone: "green", impact: { cpi: -0.5, cov: 3, roic: -1.0, bud: -12 }, logStr: "[NHNN] Bơm tiền mua nợ xấu. Doanh nghiệp dễ thở hơn nhưng ngân khố vơi đi." },
       { label: "Siết tín dụng, yêu cầu tự xử lý nợ", description: "Bảo toàn ngân sách, khóa thanh khoản yếu và để thị trường tự thanh lọc.", rationale: "Bảo toàn quỹ quốc gia, nhưng hệ lụy phá sản diện rộng.", previewAnimation: "falling-chart", tone: "red", impact: { cpi: 1.0, cov: -6, roic: 2.5, bud: 0 }, logStr: "[NHNN] Siết hệ thống tín dụng. Lãi suất đè nặng, doanh nghiệp vỡ nợ diện rộng." }
     ]
   },
@@ -420,7 +471,7 @@ const GAME_EVENTS = [
     intensity: "medium",
     sceneLabel: "Chuỗi cung ứng than",
     options: [
-      { label: "Xuất ngân sách bình ổn giá vật tư mỏ", description: "Ổn định vật tư đầu vào, giữ than ra lò và giảm sốc giá điện dây chuyền.", rationale: "Tránh tăng giá điện thứ cấp, nhưng hao hụt quỹ quốc gia.", previewAnimation: "money-flow", tone: "green", impact: { cpi: 0.5, cov: 4, roic: -2.0, bud: -12 }, logStr: "[TKV] Quỹ nhà nước can thiệp bình ổn vật tư. Than tiếp tục ra lò, điện được cứu." },
+      { label: "Xuất ngân sách bình ổn giá vật tư mỏ", description: "Ổn định vật tư đầu vào, giữ than ra lò và giảm sốc giá điện dây chuyền.", rationale: "Tránh tăng giá điện thứ cấp, nhưng hao hụt quỹ quốc gia.", previewAnimation: "money-flow", tone: "green", impact: { cpi: 0.5, cov: 4, roic: -2.0, bud: -8 }, logStr: "[TKV] Quỹ nhà nước can thiệp bình ổn vật tư. Than tiếp tục ra lò, điện được cứu." },
       { label: "Buông giá than, ép EVN và thị trường gánh", description: "Thả giá nhiên liệu theo thị trường, cứu biên lợi nhuận mỏ nhưng tạo sóng giá.", rationale: "Giá cả hàng hóa nảy số, dân cư bất bình nhưng ROIC mỏ được giữ.", previewAnimation: "rising-chart", tone: "orange", impact: { cpi: 1.5, cov: -5, roic: 3.0, bud: 0 }, logStr: "[TKV] Buông giá than tự do. Dây chuyền sản xuất trụ lại nhưng lạm phát leo thang." }
     ]
   },
@@ -434,7 +485,7 @@ const GAME_EVENTS = [
     intensity: "high",
     sceneLabel: "Mạng bay quốc gia",
     options: [
-      { label: "Bơm khẩn 12.000 tỷ cứu hãng bay quốc gia", description: "Bắc cầu vốn, giữ đường bay công ích và tránh đứt mạng hàng không.", rationale: "Giữ lại thương hiệu và đường bay công ích, kéo lùi hiệu quả chung.", previewAnimation: "air-bridge", tone: "blue", impact: { cpi: 0, cov: 2, roic: -5.0, bud: -25 }, logStr: "[VNA] Bơm vốn khẩn cấp. Hàng không Nhà nước thoát thảm, ngân khố trả giá đắt." },
+      { label: "Bơm khẩn 12.000 tỷ cứu hãng bay quốc gia", description: "Bắc cầu vốn, giữ đường bay công ích và tránh đứt mạng hàng không.", rationale: "Giữ lại thương hiệu và đường bay công ích, kéo lùi hiệu quả chung.", previewAnimation: "air-bridge", tone: "blue", impact: { cpi: 0, cov: 2, roic: -5.0, bud: -15 }, logStr: "[VNA] Bơm vốn khẩn cấp. Hàng không Nhà nước thoát thảm, ngân khố trả giá đắt." },
       { label: "Thoái vốn, để thị trường đào thải khốc liệt", description: "Rút khỏi gánh lỗ, chấp nhận cú sốc lao động và mạng bay co lại.", rationale: "Hàng chục ngàn nhân sự mất việc, nhưng cắt lỗ thành công.", previewAnimation: "falling-chart", tone: "red", impact: { cpi: -0.5, cov: -7, roic: 4.0, bud: 5 }, logStr: "[VNA] Đạp phanh thoái vốn. Cú sốc thất nghiệp ập tới, nhưng túi tiền Nhà nước an toàn." }
     ]
   }
@@ -454,7 +505,7 @@ const BLACK_SWANS = [
     emoji: "🌪️",
     modeNote: "Biến cố chen ngang: xử lý xong vẫn tiếp tục quý hiện tại.",
     desc: "Bão tàn phá hạ tầng cáp quang và nhà máy điện. Hàng triệu người mất kết nối. Trạng thái khẩn cấp được kích hoạt.",
-    impact: { cpi: 1.0, cov: -8, roic: -3.0, bud: -15 },
+    impact: { cpi: 1.0, cov: -6, roic: -3.0, bud: -10 },
     logStr: "[⚠ TAI ƯƠNG] Bão siêu cấp tàn phá hạ tầng. An sinh xã hội lùi bước."
   },
   {
@@ -467,7 +518,7 @@ const BLACK_SWANS = [
     emoji: "🚢",
     modeNote: "Biến cố chen ngang: cú sốc logistics tác động ngay vào chỉ số vĩ mô.",
     desc: "Xung đột địa chính trị làm đóng cửa eo biển. Chi phí nhập khẩu dầu, than đá bay xa, lạm phát nhập khẩu dâng cao.",
-    impact: { cpi: 2.8, cov: -2, roic: 0, bud: 0 },
+    impact: { cpi: 2.0, cov: -2, roic: 0, bud: 0 },
     logStr: "[⚠ TAI ƯƠNG] Đứt gãy vận tải toàn cầu! Bóng ma lạm phát bao trùm nền kinh tế."
   },
   {
@@ -600,6 +651,12 @@ function PolicySimGame() {
   const [eventIndex, setEventIndex] = useState(0);
   const [activePolicies, setActivePolicies] = useState([]);
 
+  const [shuffledEvents, setShuffledEvents] = useState(shuffleArray(GAME_EVENTS));
+
+  useEffect(() => {
+    loadGame(setGameState, setQuarter, setStats, setHistory, setLogs, setEventIndex, setActivePolicies);
+  }, []);
+
   const [currentBlackSwan, setCurrentBlackSwan] = useState(null);
   const [transitioning, setTransitioning] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -626,20 +683,24 @@ function PolicySimGame() {
     setGameState("start");
     setQuarter(1); setStats(INIT_STATS); setHistory([INIT_STATS]);
     setLogs(INIT_LOGS); setEventIndex(0); setActivePolicies([]);
+    setShuffledEvents(shuffleArray(GAME_EVENTS));
     setCurrentBlackSwan(null); setTransitioning(false); setFeedback(null); setLastOutcome(null);
+    localStorage.removeItem(SAVE_KEY);
   };
 
   const commitTurn = (newStats, logStrings, stayPhase = false) => {
     let fStats = { ...newStats };
     if (!stayPhase && activePolicies.includes("p_stabilize")) {
-      fStats.cpi = Math.max(0, parseFloat((fStats.cpi - 0.4).toFixed(2)));
-      fStats.roic = parseFloat((fStats.roic - 0.4).toFixed(2));
+      fStats.cpi = Math.max(0, parseFloat((fStats.cpi - POLICY_STABILIZE_CPI_REDUCTION).toFixed(2)));
+      fStats.roic = parseFloat((fStats.roic - POLICY_STABILIZE_ROIC_PENALTY).toFixed(2));
       logStrings = [...logStrings, "[HIỆU LỰC ĐẠO LUẬT] Bình ổn giá giảm CPI 0.4%, nhưng ROIC hao 0.4%."];
     }
 
     setStats(fStats);
     setHistory(p => [...p, fStats]);
     setLogs(p => [...p, ...logStrings]);
+
+    setTimeout(() => saveGame(gameState, quarter, fStats, history, logs, eventIndex, activePolicies), 0);
 
     // Check End
     let nextSt = "playing"; let sLog = null;
@@ -675,7 +736,7 @@ function PolicySimGame() {
         setGameState("policy");
         setLogs(p => [...p, `› [PHIÊN HỌP LƯỠNG VIỆN] Mở khoá ban hành Nghị Quyết vĩ mô.`]);
       } else {
-        if (Math.random() < 0.20 && nQ < 12) {
+        if (Math.random() < BLACK_SWAN_SPAWN_RATE && nQ < 12) {
           const swan = BLACK_SWANS[Math.floor(Math.random() * BLACK_SWANS.length)];
           setCurrentBlackSwan(swan);
           setGameState("blackswan");
@@ -683,7 +744,7 @@ function PolicySimGame() {
           SFX.alert();
         } else {
           setGameState("playing");
-          const ev = GAME_EVENTS[(eventIndex + 1) % GAME_EVENTS.length];
+          const ev = shuffledEvents[(eventIndex + 1) % shuffledEvents.length];
           setLogs(p => [...p, `› QUÝ ${nQ}/12 — Báo cáo từ ${ev.entity}: ${ev.title}`]);
         }
       }
@@ -698,7 +759,7 @@ function PolicySimGame() {
     setFeedback({ id: `${Date.now()}-${opt.label}`, tone: getFeedbackTone(opt.impact) });
     window.setTimeout(() => setFeedback(null), 900);
     let imp = { ...opt.impact };
-    if (activePolicies.includes("p_ppp") && imp.cov > 0) imp.roic += 1.5;
+    if (activePolicies.includes("p_ppp") && imp.cov > 0) imp.roic += POLICY_PPP_ROIC_BUFF;
 
     const ns = {
       cpi: parseFloat((stats.cpi + imp.cpi).toFixed(2)),
@@ -723,7 +784,7 @@ function PolicySimGame() {
     setGameState("playing");
     setLogs(p => [...p, `[ĐẠO LUẬT] Ký sắc lệnh: ${pol.title}`]);
     if (pol.id === "p_tax") {
-      const ns = { ...stats, bud: stats.bud + 40, cov: stats.cov - 3 };
+      const ns = { ...stats, bud: stats.bud + POLICY_TAX_BUDGET_BOOST, cov: stats.cov - POLICY_TAX_WELFARE_PENALTY };
       showOutcome({
         kind: "Hiệu lực đạo luật",
         title: pol.title,
@@ -864,7 +925,7 @@ function PolicySimGame() {
     );
   }
 
-  const currentEvent = GAME_EVENTS[eventIndex % GAME_EVENTS.length];
+  const currentEvent = shuffledEvents[eventIndex % shuffledEvents.length];
   const ce = currentEvent;
   return (
     <div style={pgStyle}>

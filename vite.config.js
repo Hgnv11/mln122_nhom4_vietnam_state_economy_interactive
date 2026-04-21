@@ -9,12 +9,29 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true,
-    allowedHosts: TUNNEL_HOSTS
+    allowedHosts: TUNNEL_HOSTS,
   },
   preview: {
     host: true,
     port: 5173,
     strictPort: true,
-    allowedHosts: TUNNEL_HOSTS
-  }
+    allowedHosts: TUNNEL_HOSTS,
+  },
+  build: {
+    minify: "terser",
+    terserOptions: {
+      compress: {
+        drop_console: false,
+        drop_debugger: true,
+      },
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          motion: ["framer-motion"],
+        },
+      },
+    },
+  },
 });
