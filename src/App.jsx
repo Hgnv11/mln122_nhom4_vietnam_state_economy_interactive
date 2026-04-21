@@ -79,11 +79,10 @@ export const SFX = {
 const NAV_ITEMS = [
   { id: "hero", label: "Mở đầu" },
   { id: "lyluan", label: "Lý luận" },
-  { id: "thuctrang", label: "Thực trạng" },
-  { id: "phantich", label: "Phân tích" },
+  { id: "thuctrang", label: "Đối chiếu" },
+  { id: "phantich", label: "Hai mặt" },
   { id: "giaiphap", label: "Giải pháp" },
   { id: "game", label: "Mini-game" },
-  { id: "quiz", label: "Tranh luận" },
   { id: "nghiencuu", label: "Nghiên cứu" },
   { id: "ketluan", label: "Kết luận" }
 ];
@@ -111,46 +110,46 @@ const HERO_STATS = [
 
 const THEORY_ITEMS = [
   {
-    id: "von-lon",
+    id: "hinh-thanh",
     index: "01",
-    cardTitle: "Vốn lớn & chu kỳ dài",
+    cardTitle: "Sự hình thành độc quyền",
     cardSummary:
-      "Các ngành điện, dầu khí, truyền tải đòi hỏi vốn đầu tư rất lớn và sức chịu rủi ro ở tầm quốc gia.",
-    detailTitle: "Vốn lớn và chu kỳ đầu tư dài hạn",
+      "Tự do cạnh tranh → tích tụ, tập trung sản xuất → độc quyền. Độc quyền nhà nước là sự kết hợp tổ chức độc quyền với sức mạnh nhà nước.",
+    detailTitle: "Lênin: độc quyền sinh ra từ chính tự do cạnh tranh",
     detailText:
-      "Theo Lênin, khi lực lượng sản xuất phát triển tới ngưỡng nhất định, tích tụ và tập trung tư bản tất yếu dẫn tới độc quyền. Ở Việt Nam, các dự án nguồn điện, truyền tải 500 kV hay thăm dò khai thác ngoài khơi có chi phí cố định ban đầu rất cao, thời gian thu hồi vốn kéo dài hàng chục năm và cần bảo lãnh tín dụng quy mô quốc gia.",
+      "Khi lực lượng sản xuất phát triển đến ngưỡng nhất định, tích tụ và tập trung tư bản tất yếu đẩy thị trường sang giai đoạn độc quyền. Độc quyền nhà nước — theo Lênin — là sự kết hợp sức mạnh của các tổ chức độc quyền với sức mạnh của bộ máy nhà nước. Trong CNTB, nó nhằm bảo vệ lợi ích độc quyền tư nhân và cứu nguy cho chủ nghĩa tư bản.",
     example:
-      "Ví dụ Việt Nam: Dự án đường dây 500 kV mạch 3 Quảng Trạch — Phố Nối đi qua 9 tỉnh, vượt năng lực tài chính và điều phối của đa số doanh nghiệp tư nhân đơn lẻ.",
+      "Đối chiếu Việt Nam: mô hình tập đoàn nhà nước hiện nay KHÔNG mang bản chất đó — nó là công cụ vật chất của Nhà nước pháp quyền XHCN, không nhằm bảo vệ lợi ích tư nhân độc quyền.",
     image:
       "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1400&q=80",
     alt: "Hạ tầng công nghiệp quy mô lớn"
   },
   {
-    id: "ha-tang",
+    id: "tu-nhien",
     index: "02",
-    cardTitle: "Hạ tầng xương sống",
+    cardTitle: "Độc quyền tự nhiên",
     cardSummary:
-      "Hạ tầng thiết yếu cần tính liên thông, chuẩn kỹ thuật đồng bộ, phục vụ cả vùng khó khăn.",
-    detailTitle: "Hạ tầng quốc gia cần tính liên thông",
+      "Một doanh nghiệp duy nhất cung ứng toàn thị trường với chi phí trung bình thấp hơn nhiều doanh nghiệp cộng lại.",
+    detailTitle: "Khi nhân bản hạ tầng là lãng phí nguồn lực",
     detailText:
-      "Độc quyền tự nhiên xuất hiện khi một doanh nghiệp duy nhất cung ứng hàng hóa/dịch vụ với chi phí trung bình thấp nhất, do hiệu ứng quy mô và tính không thể nhân bản của hạ tầng. Ở Việt Nam, lưới điện truyền tải, cáp quang trục quốc gia, hay ống dẫn khí là dạng hạ tầng không thể xây song song nhiều lần.",
+      "Độc quyền tự nhiên xuất hiện ở các ngành có chi phí cố định rất lớn và hiệu ứng quy mô mạnh: truyền tải điện, mạng ống nước, cáp trục quốc gia, đường sắt. Không thể có hai hệ thống cột điện, hai ống dẫn khí chạy song song mà vẫn hiệu quả — nên một nhà vận hành duy nhất là lời giải rẻ nhất cho xã hội.",
     example:
-      "Ví dụ Việt Nam: Chương trình điện khí hóa nông thôn đã đưa điện tới hơn 99% hộ dân — điều mà thị trường thuần túy khó tự giải quyết vì biên lợi nhuận ở vùng sâu rất thấp.",
+      "Ví dụ Việt Nam: lưới truyền tải 500 kV Bắc — Nam, mạng cáp quang biển, ống dẫn khí Nam Côn Sơn — tất cả đều là độc quyền tự nhiên điển hình.",
     image:
       "https://images.unsplash.com/photo-1518183214770-9cffbec72538?auto=format&fit=crop&w=1400&q=80",
     alt: "Phát triển hạ tầng quốc gia"
   },
   {
-    id: "dieu-tiet",
+    id: "ban-chat-vn",
     index: "03",
-    cardTitle: "Điều tiết vĩ mô",
+    cardTitle: "Bản chất khác biệt ở Việt Nam",
     cardSummary:
-      "Nhà nước cần công cụ bình ổn giá, giảm cú sốc chi phí lên đời sống khi thị trường biến động.",
-    detailTitle: "Độc quyền nhà nước như công cụ điều tiết",
+      "Tập đoàn nhà nước không phải độc quyền tư bản — mà là công cụ nắm huyết mạch, bảo đảm an ninh quốc gia và an sinh xã hội.",
+    detailTitle: "Không tối đa hóa lợi nhuận — mà phục vụ ba mục tiêu",
     detailText:
-      "Lênin chỉ rõ: chủ nghĩa tư bản độc quyền nhà nước là sự kết hợp giữa sức mạnh của tổ chức độc quyền với sức mạnh của nhà nước. Ở Việt Nam, tập đoàn nhà nước không chỉ là chủ thể kinh tế, mà còn là công cụ thực hiện chính sách an sinh và ổn định vĩ mô.",
+      "Khác với độc quyền tư bản tư nhân, tập đoàn kinh tế nhà nước Việt Nam (EVN, PVN, Viettel, VNPT, MobiFone…) được thiết kế để: (1) nắm giữ các huyết mạch của nền kinh tế; (2) bảo đảm an ninh quốc gia — năng lượng, thông tin, lương thực; (3) thực hiện chính sách an sinh xã hội mà tư nhân không sẵn lòng làm vì biên lợi nhuận thấp.",
     example:
-      "Ví dụ Việt Nam: Điều hành giá điện, xăng dầu theo lộ trình giúp hạn chế lan truyền cú sốc giá nhiên liệu thế giới vào chỉ số CPI, dù đánh đổi là tín hiệu thị trường bị làm mờ.",
+      "Thực trạng: EVN vẫn độc quyền tự nhiên ở khâu truyền tải, nhưng khâu phát điện đã mở cạnh tranh. Viễn thông đã chuyển sang độc quyền nhóm cạnh tranh gay gắt — người dùng hưởng lợi rõ rệt về giá và dịch vụ.",
     image:
       "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1400&q=80",
     alt: "Không gian hoạch định chính sách"
@@ -160,57 +159,57 @@ const THEORY_ITEMS = [
 const GROUP_ITEMS = [
   {
     id: "evn",
-    sector: "Năng lượng",
+    sector: "Độc quyền tự nhiên",
     name: "EVN",
     fullName: "Tập đoàn Điện lực Việt Nam",
     summary:
-      "Trụ cột truyền tải, điều độ và bảo đảm cung ứng điện cho toàn hệ thống.",
+      "Độc quyền tự nhiên ở khâu truyền tải — nhưng khâu phát điện đã mở cạnh tranh.",
     role:
-      "EVN nắm khâu truyền tải cao thế, điều độ hệ thống quốc gia (A0) và phân phối điện tại hầu hết địa phương, bên cạnh phần phát điện chia sẻ với nhiều nhà máy tư nhân, BOT.",
+      "EVN vận hành lưới truyền tải cao thế, điều độ hệ thống quốc gia (A0) và phân phối điện. Ở khâu phát điện, Việt Nam đã mở cho nhà máy tư nhân, BOT, FDI tham gia — đang từng bước tiến tới thị trường phát điện cạnh tranh.",
     monopoly:
-      "Lưới truyền tải 500 kV và 220 kV là độc quyền tự nhiên điển hình: chi phí đầu tư lớn, không thể nhân bản song song, cần điều phối tập trung để tránh nghẽn mạch và sự cố lan rộng.",
+      "Lưới truyền tải 500 kV / 220 kV là độc quyền tự nhiên điển hình: không thể mỗi công ty xây một hệ thống cột điện riêng — chi phí xã hội sẽ cực kỳ lãng phí. Một nhà vận hành duy nhất là lời giải hiệu quả nhất.",
     twoSide:
-      "Mặt tích cực: đảm bảo cung ứng điện, triển khai điện khí hóa nông thôn, trợ giá bậc thang cho hộ nghèo. Mặt rủi ro: thiếu cạnh tranh ở bán lẻ, giá điện khó phản ánh đúng chi phí nhiên liệu đầu vào.",
+      "Tích cực: điện khí hóa nông thôn >99% hộ, trợ giá bậc thang cho hộ nghèo, bình ổn giá khi thế giới biến động. Rủi ro: thiếu cạnh tranh ở bán lẻ, giá điện khó phản ánh đúng chi phí đầu vào, dễ bị xem là độc quyền áp đặt.",
     example:
-      "Tình huống thiếu điện cục bộ miền Bắc mùa hè 2023 cho thấy sức ép nâng cấp truyền tải và tách bạch rõ hơn chức năng điều độ — phát — phân phối.",
+      "Thiếu điện cục bộ miền Bắc mùa hè 2023 cho thấy sức ép tách bạch điều độ — phát — phân phối và đẩy nhanh thị trường bán lẻ điện cạnh tranh.",
     image:
       "https://images.unsplash.com/photo-1592833159155-c62df1b65634?auto=format&fit=crop&w=1300&q=80",
     alt: "Lưới điện cao thế và trạm biến áp"
   },
   {
     id: "pvn",
-    sector: "Dầu khí",
+    sector: "Độc quyền nhà nước",
     name: "PVN",
     fullName: "Tập đoàn Dầu khí Việt Nam",
     summary:
-      "Tích hợp thượng nguồn — hạ nguồn, đóng góp lớn cho an ninh năng lượng và ngân sách.",
+      "Độc quyền nhà nước trong khai thác tài nguyên để bảo vệ chủ quyền và lợi ích quốc gia.",
     role:
-      "PVN hoạt động xuyên suốt từ thăm dò, khai thác, vận chuyển khí, chế biến tới phân phối sản phẩm. Nhiều năm liên tục đóng góp 9–11% thu ngân sách nhà nước.",
+      "PVN hoạt động xuyên suốt thăm dò — khai thác — vận chuyển khí — chế biến — phân phối. Hoạt động ngoài khơi gắn liền với chủ quyền biển đảo. Nhiều năm đóng góp 9–11% thu ngân sách nhà nước.",
     monopoly:
-      "Khai thác tài nguyên quốc gia, hoạt động ngoài khơi gắn với chủ quyền biển đảo, công nghệ và quản trị rủi ro phức tạp khiến vai trò nhà nước rất khó thay thế hoàn toàn.",
+      "Đây là độc quyền nhà nước có chủ đích: tài nguyên dầu khí thuộc sở hữu toàn dân, hoạt động thượng nguồn gắn với an ninh biển đảo và rủi ro địa chính trị — không thể giao hoàn toàn cho tư nhân.",
     twoSide:
-      "Mặt tích cực: chuỗi khí — điện — đạm tạo liên kết công nghiệp và việc làm. Mặt rủi ro: biến động giá dầu thế giới và mô hình quản trị đa ngành từng phát sinh dự án kém hiệu quả trong quá khứ.",
+      "Tích cực: chuỗi khí — điện — đạm tạo liên kết công nghiệp, đảm bảo an ninh năng lượng. Rủi ro: biến động giá dầu thế giới; đầu tư ngoài ngành (ngân hàng, bất động sản) trước đây từng gây thất thoát vốn.",
     example:
-      "Cụm dự án Nhơn Trạch 3 & 4 dùng khí LNG là bài kiểm tra về năng lực chuyển dịch năng lượng của PVN theo cam kết Net Zero 2050.",
+      "Cụm dự án Nhơn Trạch 3 & 4 dùng khí LNG là bài kiểm tra năng lực chuyển dịch năng lượng theo cam kết Net Zero 2050.",
     image:
       "https://images.unsplash.com/photo-1513828583688-c52646db42da?auto=format&fit=crop&w=1300&q=80",
     alt: "Giàn khoan ngoài khơi và công nghiệp lọc hóa dầu"
   },
   {
     id: "vnpt",
-    sector: "Viễn thông & số",
-    name: "VNPT / Viettel",
+    sector: "Độc quyền nhóm có cạnh tranh",
+    name: "Viettel / VNPT / MobiFone",
     fullName: "Hạ tầng viễn thông quốc gia",
     summary:
-      "Hạ tầng số phủ rộng, hỗ trợ dịch vụ công, chuyển đổi số và kết nối vùng sâu, vùng xa.",
+      "Từng là độc quyền — nay là Oligopoly cạnh tranh gay gắt, mang lợi ích rõ rệt cho người dùng.",
     role:
-      "VNPT và Viettel cùng cung cấp mạng băng rộng, di động và nền tảng số công. Khác với điện hay dầu khí, viễn thông ở Việt Nam có cạnh tranh tương đối rõ ở bán lẻ.",
+      "Ba nhà mạng nhà nước cùng cung cấp di động, băng rộng, nền tảng số công. Khác với điện — dầu khí, viễn thông đã mở cạnh tranh rộng ở bán lẻ, giá cước Việt Nam thuộc nhóm thấp của khu vực.",
     monopoly:
-      "Một số lớp hạ tầng lõi (truyền dẫn trục, trung tâm dữ liệu cấp quốc gia, hệ thống cáp quang biển) vẫn mang tính độc quyền tự nhiên do hiệu ứng mạng và chi phí cố định lớn.",
+      "Chỉ một số lớp hạ tầng lõi (truyền dẫn trục, cáp quang biển, data center cấp quốc gia) vẫn mang yếu tố độc quyền tự nhiên. Phần còn lại là cạnh tranh thực chất.",
     twoSide:
-      "Mặt tích cực: phổ cập băng rộng, hỗ trợ chính quyền số, y tế và giáo dục từ xa. Mặt rủi ro: nếu thiếu điều tiết dữ liệu và cạnh tranh, có thể xuất hiện độc quyền dữ liệu và bất đối xứng thông tin người dùng.",
+      "Tích cực: phổ cập băng rộng, chính quyền số, y tế — giáo dục từ xa; người dùng hưởng giá rẻ và dịch vụ liên tục cải thiện. Rủi ro: nếu thiếu điều tiết dữ liệu, có thể xuất hiện độc quyền dữ liệu và bất đối xứng thông tin.",
     example:
-      "Việc sớm triển khai 5G và hạ tầng đám mây nội địa là phép thử cho năng lực chuyển từ nhà mạng sang nền tảng công nghệ số.",
+      "Chuyển từ nhà mạng sang nền tảng công nghệ số: 5G, cloud nội địa, hệ sinh thái Mobile Money là phép thử tiếp theo.",
     image:
       "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1300&q=80",
     alt: "Hạ tầng viễn thông, cáp quang và mạng số"
@@ -219,122 +218,107 @@ const GROUP_ITEMS = [
 
 const SOLUTION_ITEMS = [
   {
-    id: "co-phan-hoa",
-    title: "Cổ phần hóa có chọn lọc",
-    explanation:
-      "Thu hút thêm vốn xã hội ở khâu có thể cạnh tranh (phát điện, bán lẻ, dịch vụ số), trong khi Nhà nước vẫn giữ cổ phần chi phối ở mắt xích chiến lược (truyền tải, điều độ, cáp trục).",
-    benefit: "Kỳ vọng: kỷ luật tài chính, minh bạch, áp lực hiệu quả.",
-    implication:
-      "Hàm ý: xác định danh mục lĩnh vực Nhà nước chi phối tuyệt đối với lĩnh vực mở rộng sở hữu hỗn hợp trong Luật Quản lý, sử dụng vốn nhà nước sửa đổi."
-  },
-  {
     id: "tach-quan-ly",
-    title: "Tách chức năng quản lý — chủ sở hữu — điều tiết",
+    title: "01 · Tách bạch \"Quản lý nhà nước\" và \"Đại diện chủ sở hữu vốn\"",
     explanation:
-      "Cơ quan ban hành chính sách, cơ quan giám sát cạnh tranh và cơ quan đại diện vốn (Ủy ban Quản lý vốn) cần tách biệt rõ ràng để giảm xung đột lợi ích — vừa đá bóng vừa thổi còi.",
-    benefit: "Kỳ vọng: nâng chất lượng điều tiết và trách nhiệm giải trình.",
+      "Đẩy mạnh vai trò của Ủy ban Quản lý vốn nhà nước tại doanh nghiệp (\"Siêu ủy ban\"). DNNN phải hoạt động như một công ty thực thụ trên thương trường, tự chủ lỗ lãi. Nhà nước không can thiệp vào điều hành hàng ngày.",
+    benefit: "Kỳ vọng: chấm dứt tình trạng \"vừa đá bóng vừa thổi còi\", tăng trách nhiệm giải trình.",
     implication:
-      "Hàm ý: công bố thông tin theo chuẩn công ty niêm yết, KPI hiệu quả vốn nhà nước, kiểm toán và đánh giá độc lập."
+      "Hàm ý: cơ quan ban hành chính sách, cơ quan giám sát cạnh tranh và cơ quan đại diện vốn phải là ba chủ thể tách biệt."
   },
   {
-    id: "thi-truong-hoa",
-    title: "Thị trường hóa có kiểm soát",
+    id: "co-phan-hoa",
+    title: "02 · Đẩy mạnh cổ phần hóa và thoái vốn có chọn lọc",
     explanation:
-      "Mở thị trường bán buôn và bán lẻ điện cạnh tranh, mở dịch vụ số; giữ điều tiết chặt ở hạ tầng độc quyền tự nhiên bằng cơ chế giá trần và cam kết chất lượng dịch vụ (SLA).",
-    benefit: "Kỳ vọng: giảm chi phí dài hạn, khuyến khích đổi mới công nghệ.",
+      "Nhà nước chỉ giữ 100% vốn ở lĩnh vực cốt lõi: an ninh, quốc phòng, truyền tải điện, hạ tầng trọng yếu. Các khâu khác — bán lẻ điện, khai thác thương mại, dịch vụ số — cần gọi vốn tư nhân để tăng cạnh tranh.",
+    benefit: "Kỳ vọng: kỷ luật tài chính, minh bạch, áp lực hiệu quả từ cổ đông.",
     implication:
-      "Hàm ý: lộ trình giá theo thị trường đi kèm gói hỗ trợ nhóm dễ tổn thương, tránh sốc giá lên hộ thu nhập thấp."
+      "Hàm ý: xác định rõ danh mục lĩnh vực Nhà nước chi phối tuyệt đối trong Luật Quản lý, sử dụng vốn nhà nước sửa đổi."
+  },
+  {
+    id: "xoa-doc-quyen",
+    title: "03 · Xóa bỏ độc quyền doanh nghiệp — chỉ giữ độc quyền nhà nước khi thật sự cần",
+    explanation:
+      "Thúc đẩy hoàn thiện Thị trường bán lẻ điện cạnh tranh. Tách EVN khỏi các nhà máy phát điện: các nhà máy (tư nhân, nước ngoài, nhà nước) cạnh tranh bán điện; EVN chỉ thu phí \"thuê đường dây truyền tải\".",
+    benefit: "Kỳ vọng: giảm chi phí dài hạn, khuyến khích đổi mới công nghệ, minh bạch giá điện.",
+    implication:
+      "Hàm ý: lộ trình giá thị trường đi kèm gói hỗ trợ nhóm yếu thế để tránh sốc giá lên hộ thu nhập thấp."
+  },
+  {
+    id: "quan-tri-oecd",
+    title: "04 · Áp dụng quản trị doanh nghiệp hiện đại (chuẩn OECD)",
+    explanation:
+      "Minh bạch hóa tài chính, kiểm toán độc lập quốc tế. Thuê các CEO và chuyên gia giỏi từ bên ngoài (kể cả người nước ngoài) vào điều hành — thay vì chỉ bổ nhiệm cán bộ theo tư duy hành chính.",
+    benefit: "Kỳ vọng: năng lực quản trị ngang tầm khu vực, giảm rủi ro đầu tư ngoài ngành.",
+    implication:
+      "Hàm ý: công bố thông tin theo chuẩn công ty niêm yết, KPI hiệu quả vốn nhà nước rõ ràng, đánh giá độc lập định kỳ."
   }
 ];
-
-const SCENARIOS = [
-  {
-    id: "scenario-1",
-    title: "Tình huống 1 — Bình ổn giá điện khi lạm phát",
-    description:
-      "Giá nhiên liệu thế giới tăng nhanh, thu nhập hộ gia đình phục hồi chậm. EVN nên được yêu cầu làm gì?",
-    options: [
-      { key: "a", label: "A. Giữ giá thấp đồng loạt cho mọi nhóm khách hàng", result: "mixed" },
-      { key: "b", label: "B. Điều chỉnh có lộ trình + trợ cấp trực tiếp hộ yếu thế", result: "good" }
-    ]
-  },
-  {
-    id: "scenario-2",
-    title: "Tình huống 2 — Mở cạnh tranh trong ngành điện",
-    description:
-      "Nhu cầu điện tăng mạnh theo công nghiệp hóa. Có nên mở rộng khu vực tư nhân ở khâu phát điện không?",
-    options: [
-      { key: "a", label: "A. Có — nhưng giữ điều độ và truyền tải dưới kiểm soát nhà nước", result: "good" },
-      { key: "b", label: "B. Không — duy trì mô hình tích hợp tập trung như hiện tại", result: "mixed" }
-    ]
-  },
-  {
-    id: "scenario-3",
-    title: "Tình huống 3 — Cấu trúc sở hữu doanh nghiệp hạ tầng số",
-    description:
-      "Trong giai đoạn chuyển đổi số sâu, cấu trúc sở hữu nào cân bằng giữa kiểm soát chiến lược và hiệu quả quản trị?",
-    options: [
-      { key: "a", label: "A. Giữ 100% vốn nhà nước ở hầu hết các khâu", result: "mixed" },
-      { key: "b", label: "B. Nhà nước chi phối lõi độc quyền, mở sở hữu hỗn hợp ở khâu cạnh tranh", result: "good" }
-    ]
-  }
-];
-
-const QUIZ_FEEDBACK = {
-  good:
-    "Lựa chọn theo hướng cân bằng: tín hiệu thị trường vẫn hoạt động nhưng nhóm dễ tổn thương được bảo vệ và ổn định vĩ mô được giữ.",
-  mixed:
-    "Có thể đạt mục tiêu ngắn hạn, nhưng rủi ro dài hạn là méo mó tín hiệu giá hoặc làm giảm động lực nâng cao hiệu quả."
-};
 
 const RESEARCH_LINKS = [
   {
-    label: "Giáo trình",
-    title: "Giáo trình Kinh tế Chính trị Mác — Lênin (Bộ GD&ĐT)",
+    label: "Văn kiện Đảng",
+    title: "Nghị quyết 12-NQ/TW (03/6/2017) — Cơ cấu lại, đổi mới DNNN",
     description:
-      "Chương 4: Cạnh tranh và độc quyền trong nền kinh tế thị trường — tài liệu học chính thức của môn MLN122.",
-    href: "https://moet.gov.vn/",
-    source: "moet.gov.vn"
-  },
-  {
-    label: "Chính sách",
-    title: "Nghị quyết 12-NQ/TW về cải cách DNNN",
-    description:
-      "Định hướng tiếp tục cơ cấu lại, đổi mới và nâng cao hiệu quả doanh nghiệp nhà nước đến 2030.",
-    href: "https://tulieuvankien.dangcongsan.vn/",
+      "Toàn văn nghị quyết Hội nghị Trung ương 5 khóa XII: quan điểm chỉ đạo, mục tiêu, nhiệm vụ và giải pháp cải cách doanh nghiệp nhà nước.",
+    href: "https://tulieuvankien.dangcongsan.vn/he-thong-van-ban/van-ban-cua-dang/nghi-quyet-so-12-nqtw-ngay-362017-hoi-nghi-lan-thu-nam-ban-chap-hanh-trung-uong-dang-khoa-xii-ve-tiep-tuc-co-cau-lai-3223",
     source: "tulieuvankien.dangcongsan.vn"
   },
   {
-    label: "Dữ liệu",
-    title: "Báo cáo thường niên — EVN",
+    label: "Học thuật",
+    title: "Tạp chí Cộng sản — DNNN phát huy vai trò mở đường, dẫn dắt",
     description:
-      "Số liệu sản lượng điện, tỉ lệ điện khí hóa, cơ cấu nguồn phát và đầu tư hạ tầng truyền tải.",
-    href: "https://www.evn.com.vn/",
-    source: "evn.com.vn"
+      "Bài phân tích giải pháp để doanh nghiệp nhà nước giữ vai trò mở đường, dẫn dắt trong phát triển kinh tế — xã hội theo tinh thần nghị quyết.",
+    href: "https://www.tapchicongsan.org.vn/en/media-story/-/asset_publisher/V8hhp4dK31Gf/content/giai-phap-thuc-day-doanh-nghiep-nha-nuoc-phat-huy-vai-tro-mo-duong-dan-dat-trong-phat-trien-kinh-te-xa-hoi",
+    source: "tapchicongsan.org.vn"
   },
   {
-    label: "Dữ liệu",
-    title: "Tập đoàn Dầu khí Việt Nam — PVN",
+    label: "Lý luận",
+    title: "Tạp chí Quản lý nhà nước — Vai trò điều tiết của Nhà nước (10/2025)",
     description:
-      "Thông tin vận hành, các dự án chiến lược thượng nguồn, hạ nguồn và đóng góp ngân sách.",
-    href: "https://www.pvn.vn/",
-    source: "pvn.vn"
+      "Phát huy vai trò điều tiết của Nhà nước trong nền kinh tế thị trường định hướng XHCN: hàm ý chính sách cho khu vực DNNN hiện nay.",
+    href: "https://www.quanlynhanuoc.vn/2025/10/16/phat-huy-vai-tro-dieu-tiet-cua-nha-nuoc-trong-nen-kinh-te-thi-truong-dinh-huong-xa-hoi-chu-nghia-o-viet-nam-hien-nay/",
+    source: "quanlynhanuoc.vn"
   },
   {
     label: "Nghiên cứu",
-    title: "World Bank — Vietnam Development Report",
+    title: "Tạp chí Quản lý nhà nước — Đổi mới DNNN (03/2025)",
     description:
-      "Phân tích vai trò của khu vực nhà nước trong tăng trưởng, năng lực cạnh tranh và cải cách thể chế.",
-    href: "https://www.worldbank.org/en/country/vietnam",
-    source: "worldbank.org"
+      "Đổi mới doanh nghiệp nhà nước trong nền kinh tế thị trường định hướng XHCN ở Việt Nam: đánh giá thực trạng và kiến nghị giải pháp.",
+    href: "https://www.quanlynhanuoc.vn/2025/03/01/doi-moi-doanh-nghiep-nha-nuoc-trong-nen-kinh-te-thi-truong-dinh-huong-xa-hoi-chu-nghia-o-viet-nam/",
+    source: "quanlynhanuoc.vn"
   },
   {
-    label: "Học thuật",
-    title: "Tạp chí Cộng sản — Chuyên đề DNNN",
+    label: "Dữ liệu — EVN",
+    title: "EVN — Báo cáo tổng kết thực hiện kế hoạch 2023 (PDF)",
     description:
-      "Các bài bình luận, phân tích cập nhật về vai trò chủ đạo của kinh tế nhà nước tại Việt Nam.",
-    href: "https://www.tapchicongsan.org.vn/",
-    source: "tapchicongsan.org.vn"
+      "Sản lượng điện 253,05 tỷ kWh (+4,26%), doanh thu bán điện 494.359 tỷ đồng, kết quả kinh doanh điện lỗ 21.821 tỷ đồng — số liệu chính thức.",
+    href: "https://www.evn.com.vn/userfile/User/minhhanh/files/2024/6/BaocaoTongketEVN2023.pdf",
+    source: "evn.com.vn (PDF)"
+  },
+  {
+    label: "Dữ liệu — PVN",
+    title: "Petrovietnam — Kho báo cáo thường niên (toàn giai đoạn)",
+    description:
+      "Trang tổng hợp các báo cáo thường niên của Tập đoàn Công nghiệp — Năng lượng Quốc gia Việt Nam: đóng góp ngân sách, sản lượng khai thác, chiến lược chuyển dịch.",
+    href: "https://www.pvn.vn/Pages/baocaothuongnien.aspx?catid=D85EBBC6-4BB6-4111-B500-0EFA472B64EB",
+    source: "pvn.vn"
+  },
+  {
+    label: "Quốc tế",
+    title: "World Bank — Reform of State-Owned Enterprises in Viet Nam (PDF)",
+    description:
+      "Báo cáo chuyên đề về cải cách DNNN Việt Nam: minh bạch, hiệu quả vốn, khuyến nghị quản trị theo chuẩn OECD và lộ trình cổ phần hóa.",
+    href: "https://state-owned-enterprises.worldbank.org/sites/soe/files/reports/REFORM%20OF%20STATE-OWNED%20ENTERPRISES%20IN%20VIET%20NAM%20TO%20INCREASE%20PERFORMANCE%20AND%20PROFIT.pdf",
+    source: "worldbank.org (PDF)"
+  },
+  {
+    label: "Thực tiễn",
+    title: "Tuổi Trẻ — \"Dân vẫn chưa được chọn nhà bán lẻ điện\" (09/2025)",
+    description:
+      "Bài báo cập nhật lộ trình thị trường bán lẻ điện cạnh tranh, vì sao EVN vẫn là đơn vị duy nhất và các vướng mắc ở khâu tách bạch phát — truyền tải — bán lẻ.",
+    href: "https://tuoitre.vn/dan-van-chua-duoc-chon-nha-ban-le-dien-2025090821471906.htm",
+    source: "tuoitre.vn"
   }
 ];
 
@@ -1059,7 +1043,6 @@ function App() {
   const [activeTheoryId, setActiveTheoryId] = useState(THEORY_ITEMS[0].id);
   const [modalGroupId, setModalGroupId] = useState(null);
   const [openAccordions, setOpenAccordions] = useState([SOLUTION_ITEMS[0].id]);
-  const [quizAnswers, setQuizAnswers] = useState({});
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState(NAV_ITEMS[0].id);
 
@@ -1072,13 +1055,6 @@ function App() {
     () => GROUP_ITEMS.find((item) => item.id === modalGroupId) || null,
     [modalGroupId]
   );
-
-  const quizStats = useMemo(() => {
-    const answers = Object.values(quizAnswers);
-    const good = answers.filter((item) => item.result === "good").length;
-    const mixed = answers.filter((item) => item.result === "mixed").length;
-    return { good, mixed, answered: answers.length };
-  }, [quizAnswers]);
 
   useEffect(() => {
     if (route !== "home") {
@@ -1156,13 +1132,6 @@ function App() {
     setOpenAccordions((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
-  };
-
-  const chooseOption = (scenarioId, optionKey, result) => {
-    setQuizAnswers((prev) => ({
-      ...prev,
-      [scenarioId]: { optionKey, result }
-    }));
   };
 
   if (route === "game") {
@@ -1261,13 +1230,13 @@ function App() {
         <section id="lyluan">
           <div className="container">
             <div className="section-head" data-reveal="">
-              <p className="section-tag">Nền tảng lý thuyết</p>
+              <p className="section-tag">Phần 1 · Lý luận</p>
               <h2 className="section-title">
-                Vì sao mô hình tập đoàn nhà nước từng là lựa chọn chiến lược?
+                Từ lý luận Lênin về độc quyền đến đặc thù Việt Nam
               </h2>
               <p className="section-sub">
-                Nhấn từng luận điểm để xem diễn giải ngắn gọn và ví dụ cụ thể tại Việt Nam. Nội dung bám sát
-                Chương 4 — Giáo trình Kinh tế Chính trị Mác — Lênin.
+                Ba lát cắt lý luận dùng cho phần đối chiếu: sự hình thành độc quyền, độc quyền tự nhiên,
+                và bản chất khác biệt của tập đoàn kinh tế nhà nước XHCN. Nhấn từng thẻ để mở diễn giải.
               </p>
             </div>
 
@@ -1302,10 +1271,11 @@ function App() {
         <section className="reality" id="thuctrang">
           <div className="container">
             <div className="section-head" data-reveal="">
-              <p className="section-tag">Thực trạng vận hành</p>
-              <h2 className="section-title">Ba trụ cột đang nắm hạ tầng thiết yếu</h2>
+              <p className="section-tag">Phần 1 · Đối chiếu thực tiễn</p>
+              <h2 className="section-title">EVN, PVN, Viễn thông — ba lát cắt điển hình</h2>
               <p className="section-sub">
-                Nhấn từng thẻ để mở phân tích vai trò kinh tế, tính độc quyền tự nhiên và tình huống điển hình.
+                Áp lý luận vào thực tiễn: đâu là độc quyền tự nhiên, đâu đã chuyển sang độc quyền nhóm
+                cạnh tranh, đâu là độc quyền nhà nước vì an ninh quốc gia. Nhấn thẻ để xem phân tích chi tiết.
               </p>
             </div>
 
@@ -1344,12 +1314,13 @@ function App() {
         <section id="phantich">
           <div className="container">
             <div className="section-head" data-reveal="">
-              <p className="section-tag">Hai chiều phân tích</p>
+              <p className="section-tag">Phần 2 · Tính hai mặt</p>
               <h2 className="section-title">
-                Công cụ điều tiết vĩ mô hay nguy cơ độc quyền kéo dài?
+                Công cụ điều tiết vĩ mô — đi kèm nguy cơ kém hiệu quả
               </h2>
               <p className="section-sub">
-                Một góc nhìn cân bằng giữa mục tiêu ổn định xã hội và hiệu quả thị trường.
+                Nhìn qua lăng kính biện chứng: ba giá trị tích cực đặt cạnh ba rủi ro thường gặp
+                của mô hình tập đoàn kinh tế nhà nước ở Việt Nam.
               </p>
             </div>
 
@@ -1362,25 +1333,31 @@ function App() {
                   />
                 </div>
                 <div className="analysis-content">
-                  <h3>Vai trò tích cực trong điều tiết</h3>
+                  <h3>Mặt tích cực — điều tiết & hàng hóa công</h3>
                   <ul>
                     <li>
                       <span className="dot plus">+</span>
-                      <span>Giảm sốc giá đầu vào trong giai đoạn lạm phát và biến động quốc tế.</span>
-                    </li>
-                    <li>
-                      <span className="dot plus">+</span>
                       <span>
-                        Bảo đảm dịch vụ công ích ở khu vực lợi nhuận thấp nhưng nhu cầu xã hội cao.
+                        <strong>Ổn định kinh tế vĩ mô:</strong> EVN, Petrolimex "gánh lỗ" giữ giá điện
+                        — xăng khi giá than — dầu thế giới tăng phi mã (2022), kiểm soát lạm phát —
+                        điều mà doanh nghiệp tư nhân đặt lợi nhuận lên đầu sẽ không làm.
                       </span>
                     </li>
                     <li>
                       <span className="dot plus">+</span>
-                      <span>Tạo năng lực triển khai nhanh các dự án hạ tầng chiến lược quy mô lớn.</span>
+                      <span>
+                        <strong>Hàng hóa công & an sinh:</strong> EVN kéo điện ra Trường Sa, Phú Quốc;
+                        Viettel phủ sóng vùng núi cao — chi phí khổng lồ, thu hồi vốn rất lâu, tư nhân
+                        không muốn làm. Không ai bị bỏ lại phía sau.
+                      </span>
                     </li>
                     <li>
                       <span className="dot plus">+</span>
-                      <span>Hỗ trợ mục tiêu an ninh năng lượng và tự chủ kinh tế dài hạn.</span>
+                      <span>
+                        <strong>Mở đường & dẫn dắt:</strong> đầu tư công nghiệp nặng và hạ tầng cốt lõi
+                        đòi vốn cực lớn, rủi ro cao — nhà nước đi trước để tạo nền cho khối tư nhân
+                        phát triển theo.
+                      </span>
                     </li>
                   </ul>
                 </div>
@@ -1394,24 +1371,30 @@ function App() {
                   />
                 </div>
                 <div className="analysis-content">
-                  <h3>Rủi ro của cấu trúc độc quyền</h3>
+                  <h3>Mặt tiêu cực — nguy cơ độc quyền & kém hiệu quả</h3>
                   <ul>
                     <li>
                       <span className="dot minus">−</span>
-                      <span>Động lực cải tiến suy giảm khi cạnh tranh bị giới hạn.</span>
-                    </li>
-                    <li>
-                      <span className="dot minus">−</span>
-                      <span>Chi phí quản trị cao dễ chuyển hóa thành gánh nặng giá và ngân sách.</span>
-                    </li>
-                    <li>
-                      <span className="dot minus">−</span>
-                      <span>Quy trình ra quyết định chậm, kém linh hoạt trước công nghệ mới.</span>
+                      <span>
+                        <strong>Trì trệ, thiếu động lực đổi mới:</strong> khi không sợ phá sản, không
+                        sợ mất thị phần, doanh nghiệp dễ rơi vào sức ì — chậm cải tiến công nghệ và
+                        dịch vụ khách hàng.
+                      </span>
                     </li>
                     <li>
                       <span className="dot minus">−</span>
                       <span>
-                        Nguy cơ xung đột giữa mục tiêu chính sách và mục tiêu hiệu quả doanh nghiệp.
+                        <strong>Kém hiệu quả phân bổ nguồn lực:</strong> bộ máy cồng kềnh, quan liêu.
+                        Từng có giai đoạn đầu tư ngoài ngành dàn trải (điện — dầu khí đi làm ngân hàng,
+                        bất động sản) dẫn đến thất thoát vốn nhà nước.
+                      </span>
+                    </li>
+                    <li>
+                      <span className="dot minus">−</span>
+                      <span>
+                        <strong>Rủi ro giá & bất đối xứng thông tin:</strong> người tiêu dùng đôi khi
+                        phải chịu mức giá do thế độc quyền áp đặt, cơ chế tính giá chưa minh bạch,
+                        thiếu lựa chọn thay thế — điện sinh hoạt là ví dụ rõ nhất.
                       </span>
                     </li>
                   </ul>
@@ -1424,11 +1407,14 @@ function App() {
         <section id="giaiphap">
           <div className="container">
             <div className="section-head" data-reveal="">
-              <p className="section-tag">Lộ trình cải cách</p>
+              <p className="section-tag">Phần 3 · Giải pháp</p>
               <h2 className="section-title">
-                Ba hướng thiết kế thể chế để dung hòa ổn định và cạnh tranh
+                Phát huy vai trò chủ đạo — vận hành theo cơ chế thị trường
               </h2>
-              <p className="section-sub">Mở từng mục để xem lợi ích kỳ vọng và hàm ý chính sách.</p>
+              <p className="section-sub">
+                Bốn nhóm giải pháp để dung hòa bài toán "vừa làm anh cả, vừa phải đá bóng hay như
+                tư nhân". Mở từng mục để xem lợi ích kỳ vọng và hàm ý chính sách.
+              </p>
             </div>
 
             <div className="solution-layout">
@@ -1516,73 +1502,12 @@ function App() {
           </div>
         </section>
 
-        <section id="quiz">
-          <div className="container">
-            <div className="section-head" data-reveal="">
-              <p className="section-tag">Tranh luận lớp học</p>
-              <h2 className="section-title">Bạn sẽ chọn chính sách nào?</h2>
-              <p className="section-sub">
-                Mỗi lựa chọn đều có đánh đổi. Bấm A hoặc B để xem phản hồi và thảo luận ngay trên lớp.
-              </p>
-            </div>
-
-            <div className="quiz-wrap">
-              {SCENARIOS.map((scenario) => {
-                const answer = quizAnswers[scenario.id];
-
-                return (
-                  <article className="scenario" data-reveal="" key={scenario.id}>
-                    <h4>{scenario.title}</h4>
-                    <p>{scenario.description}</p>
-                    <div className="choice-row">
-                      {scenario.options.map((option) => (
-                        <button
-                          key={option.key}
-                          className={`choice ${answer?.optionKey === option.key ? "selected" : ""}`}
-                          type="button"
-                          onClick={() => chooseOption(scenario.id, option.key, option.result)}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div
-                      className={`scenario-result ${answer ? "show" : ""} ${answer?.result === "good" ? "good" : ""
-                        }`}
-                    >
-                      {answer ? QUIZ_FEEDBACK[answer.result] : ""}
-                    </div>
-                  </article>
-                );
-              })}
-
-              <div className="stats" data-reveal="">
-                <div className="stat">
-                  <p className="stat-value">{quizStats.good}</p>
-                  <p className="stat-label">Lựa chọn cân bằng</p>
-                </div>
-                <div className="stat">
-                  <p className="stat-value">{quizStats.mixed}</p>
-                  <p className="stat-label">Lựa chọn cần đánh đổi</p>
-                </div>
-                <div className="stat">
-                  <p className="stat-value">{quizStats.answered}</p>
-                  <p className="stat-label">Tình huống đã trả lời</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <section className="research" id="nghiencuu">
           <div className="container">
             <div className="section-head" data-reveal="">
               <p className="section-tag">Đọc thêm · Tài liệu tham khảo</p>
-              <h2 className="section-title">Nguồn tra cứu cho phần trình bày và phản biện</h2>
-              <p className="section-sub">
-                Các liên kết dẫn tới tài liệu gốc, văn bản chính sách và dữ liệu vận hành của tập đoàn. Nhớ
-                kiểm tra ngày cập nhật khi trích dẫn trong bài viết.
-              </p>
+              <h2 className="section-title">Nguồn tra cứu bổ sung</h2>
+              
             </div>
 
             <div className="research-grid" data-reveal="">

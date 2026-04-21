@@ -8,7 +8,9 @@
       "Bash(netstat -ano)",
       "Bash(taskkill //PID 15624 //F)",
       "Bash(taskkill //PID 24980 //F)",
-      "Bash(curl -sSI -o - --max-time 15 https://fpt.tokyo/)"
+      "Bash(curl -sSI -o - --max-time 15 https://fpt.tokyo/)",
+      "Bash(npm install *)",
+      "WebSearch"
     ],
     "additionalDirectories": [
       "C:\\Users\\ADMIN\\.cloudflared"
