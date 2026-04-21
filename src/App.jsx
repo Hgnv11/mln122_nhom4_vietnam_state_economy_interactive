@@ -1,4 +1,73 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HỆ THỐNG ÂM THANH (Synth Web Audio API)
+// ═══════════════════════════════════════════════════════════════════════════
+let audioCtx;
+const initAudio = () => {
+  if (!window.AudioContext && !window.webkitAudioContext) return;
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+};
+
+const playTone = (freq, type, duration, vol = 0.1) => {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch (e) { }
+};
+
+let bgmNode = null;
+export const SFX = {
+  hover: () => playTone(300, 'sine', 0.05, 0.01),
+  click: () => playTone(600, 'sine', 0.1, 0.03),
+  confirm: () => { playTone(300, 'square', 0.1, 0.03); setTimeout(() => playTone(450, 'square', 0.2, 0.03), 100); },
+  alert: () => { playTone(400, 'sawtooth', 0.3, 0.05); setTimeout(() => playTone(800, 'sawtooth', 0.3, 0.05), 300); setTimeout(() => playTone(400, 'sawtooth', 0.3, 0.05), 600); },
+  win: () => { playTone(440, 'sine', 0.1, 0.05); setTimeout(() => playTone(554, 'sine', 0.1, 0.05), 150); setTimeout(() => playTone(659, 'sine', 0.4, 0.05), 300); },
+  lose: () => playTone(150, 'sawtooth', 0.8, 0.1),
+  law: () => { playTone(523, 'triangle', 0.2, 0.05); setTimeout(() => playTone(659, 'triangle', 0.4, 0.05), 150); },
+  bgm: (play) => {
+    if (!audioCtx) return;
+    if (play && !bgmNode) {
+      try {
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const lfo = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const lfoGain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+
+        osc1.type = 'triangle'; osc1.frequency.value = 55;
+        osc2.type = 'sine'; osc2.frequency.value = 55.5;
+        filter.type = 'lowpass'; filter.frequency.value = 150; filter.Q.value = 0;
+        lfo.type = 'sine'; lfo.frequency.value = 0.08;
+        lfo.connect(lfoGain); lfoGain.gain.value = 80; lfoGain.connect(filter.frequency);
+        gain.gain.setValueAtTime(0, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 3);
+
+        osc1.connect(filter); osc2.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+        osc1.start(); osc2.start(); lfo.start();
+        bgmNode = { osc1, osc2, lfo, gain, filter };
+      } catch (e) { }
+    } else if (!play && bgmNode) {
+      try {
+        bgmNode.gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 2);
+        const n = bgmNode;
+        bgmNode = null;
+        setTimeout(() => { try { n.osc1.stop(); n.osc2.stop(); n.lfo.stop(); n.gain.disconnect(); n.filter.disconnect(); } catch (e) { } }, 2100);
+      } catch (e) { }
+    }
+  }
+};
 
 const NAV_ITEMS = [
   { id: "hero", label: "Mở đầu" },
@@ -7,6 +76,7 @@ const NAV_ITEMS = [
   { id: "phantich", label: "Phân tích" },
   { id: "giaiphap", label: "Giải pháp" },
   { id: "game", label: "Mini-game" },
+  { id: "quiz", label: "Tranh luận" },
   { id: "nghiencuu", label: "Nghiên cứu" },
   { id: "ketluan", label: "Kết luận" }
 ];
@@ -170,6 +240,46 @@ const SOLUTION_ITEMS = [
   }
 ];
 
+const SCENARIOS = [
+  {
+    id: "scenario-1",
+    title: "Tình huống 1 — Bình ổn giá điện khi lạm phát",
+    description:
+      "Giá nhiên liệu thế giới tăng nhanh, thu nhập hộ gia đình phục hồi chậm. EVN nên được yêu cầu làm gì?",
+    options: [
+      { key: "a", label: "A. Giữ giá thấp đồng loạt cho mọi nhóm khách hàng", result: "mixed" },
+      { key: "b", label: "B. Điều chỉnh có lộ trình + trợ cấp trực tiếp hộ yếu thế", result: "good" }
+    ]
+  },
+  {
+    id: "scenario-2",
+    title: "Tình huống 2 — Mở cạnh tranh trong ngành điện",
+    description:
+      "Nhu cầu điện tăng mạnh theo công nghiệp hóa. Có nên mở rộng khu vực tư nhân ở khâu phát điện không?",
+    options: [
+      { key: "a", label: "A. Có — nhưng giữ điều độ và truyền tải dưới kiểm soát nhà nước", result: "good" },
+      { key: "b", label: "B. Không — duy trì mô hình tích hợp tập trung như hiện tại", result: "mixed" }
+    ]
+  },
+  {
+    id: "scenario-3",
+    title: "Tình huống 3 — Cấu trúc sở hữu doanh nghiệp hạ tầng số",
+    description:
+      "Trong giai đoạn chuyển đổi số sâu, cấu trúc sở hữu nào cân bằng giữa kiểm soát chiến lược và hiệu quả quản trị?",
+    options: [
+      { key: "a", label: "A. Giữ 100% vốn nhà nước ở hầu hết các khâu", result: "mixed" },
+      { key: "b", label: "B. Nhà nước chi phối lõi độc quyền, mở sở hữu hỗn hợp ở khâu cạnh tranh", result: "good" }
+    ]
+  }
+];
+
+const QUIZ_FEEDBACK = {
+  good:
+    "Lựa chọn theo hướng cân bằng: tín hiệu thị trường vẫn hoạt động nhưng nhóm dễ tổn thương được bảo vệ và ổn định vĩ mô được giữ.",
+  mixed:
+    "Có thể đạt mục tiêu ngắn hạn, nhưng rủi ro dài hạn là méo mó tín hiệu giá hoặc làm giảm động lực nâng cao hiệu quả."
+};
+
 const RESEARCH_LINKS = [
   {
     label: "Giáo trình",
@@ -233,157 +343,594 @@ function useRoute() {
   return route;
 }
 
-function GamePlaceholder() {
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => (t + 1) % 120), 60);
-    return () => clearInterval(id);
-  }, []);
+// ═══════════════════════════════════════════════════════════════════════════
+// DỮ LIỆU SỰ KIỆN CHÍNH
+// ═══════════════════════════════════════════════════════════════════════════
+const GAME_EVENTS = [
+  {
+    id: 1, entity: "EVN", entityColor: "#f2c14e", entityBg: "rgba(242,193,78,0.15)",
+    title: "Khủng hoảng thiếu điện mùa khô",
+    desc: "Mực nước hồ thủy điện cảnh báo. Giá than tăng 40%. Biên lợi nhuận EVN thủng đáy. Giải pháp của cấp điều hành là gì?",
+    options: [
+      { label: "Giữ giá điện — chịu lỗ, lấy ngân sách bình ổn", rationale: "Bảo vệ CPI, người dân không sốc giá.", impact: { cpi: 0, cov: 2, roic: -4.5, bud: -15 }, logStr: "[EVN] Giữ nguyên giá. Hao hụt ngân sách lớn nhưng được lòng dân." },
+      { label: "Tăng giá điện 10% — theo tín hiệu thị trường", rationale: "Bảo vệ dòng vốn, nhưng lạm phát sẽ leo thang.", impact: { cpi: 2.5, cov: -5, roic: 3.0, bud: 0 }, logStr: "[EVN] Tăng giá điện 10%. ROIC phục hồi nhưng lạm phát tăng mạnh." }
+    ]
+  },
+  {
+    id: 2, entity: "PVN", entityColor: "#7dd3fc", entityBg: "rgba(125,211,252,0.12)",
+    title: "Giá dầu Brent lao dốc −38%",
+    desc: "Ngân sách nhà nước hụt thu trầm trọng do dầu thế giới sụt giảm. Sức ép duy trì quy mô thu ngân sách đang đè nặng lên PVN.",
+    options: [
+      { label: "Ép khai thác tăng 20% — cứu ngân sách", rationale: "Chi phí bơm hút cao làm giảm ROIC dài hạn.", impact: { cpi: 0.5, cov: 0, roic: -2.0, bud: 20 }, logStr: "[PVN] Ép sản lượng tối đa. Cứu được ngân sách nhưng biên lợi nhuận mỏ giảm." },
+      { label: "Cắt sản lượng — bảo tồn mỏ, chờ giá phục hồi", rationale: "Mất nguồn thu ngân sách, một số chương trình an sinh bị hoãn.", impact: { cpi: 0, cov: -4, roic: 1.5, bud: -10 }, logStr: "[PVN] Bảo tồn mỏ. Hiệu quả vốn giữ được, nhưng Nhà nước thâm hụt tài chính." }
+    ]
+  },
+  {
+    id: 3, entity: "VNPT", entityColor: "#86efac", entityBg: "rgba(134,239,172,0.12)",
+    title: "Tiên phong phủ sóng 5G vùng lõm",
+    desc: "Chính phủ yêu cầu phủ sóng 100% vùng sâu bất chấp lỗ. Biên lợi nhuận vùng viễn thông núi đồi và hải đảo hoàn toàn âm.",
+    options: [
+      { label: "Dùng 100% vốn tập đoàn triển khai thần tốc", rationale: "Chỉ số an sinh tăng vọt nhưng Ngân sách và ROIC đổ máu.", impact: { cpi: 0, cov: 6, roic: -4.0, bud: -18 }, logStr: "[VNPT] Phủ sóng thành công bằng vốn chủ. Cáp viễn thông tới tận bản làng." },
+      { label: "Hợp tác Viettel/MobiFone dùng chung hạ tầng", rationale: "Tiết kiệm ngân sách nhưng tiến độ phủ sóng chậm hơn.", impact: { cpi: 0.5, cov: 2, roic: 1.0, bud: -5 }, logStr: "[VNPT] Liên minh dùng chung cáp. Ngân sách an toàn, độ phủ tăng vừa phải." }
+    ]
+  },
+  {
+    id: 4, entity: "NHNN", entityColor: "#f4a7aa", entityBg: "rgba(195,40,45,0.15)",
+    title: "Nợ xấu ngân hàng sau đại dịch",
+    desc: "Các doanh nghiệp nhỏ kiệt quệ kéo theo nợ xấu ngân hàng quốc doanh tăng. Một gói cứu trợ khẩn cấp đang được xem xét.",
+    options: [
+      { label: "Bơm ngân sách mua nợ xấu qua VAMC", rationale: "Giải cứu dòng tín dụng, nhưng tiêu tốn ngân sách quốc gia.", impact: { cpi: -0.5, cov: 3, roic: -1.0, bud: -25 }, logStr: "[NHNN] Bơm tiền mua nợ xấu. Doanh nghiệp dễ thở hơn nhưng ngân khố vơi đi." },
+      { label: "Siết tín dụng, yêu cầu tự xử lý nợ", rationale: "Bảo toàn quỹ quốc gia, nhưng hệ lụy phá sản diện rộng.", impact: { cpi: 1.0, cov: -6, roic: 2.5, bud: 0 }, logStr: "[NHNN] Siết hệ thống tín dụng. Lãi suất đè nặng, doanh nghiệp vỡ nợ diện rộng." }
+    ]
+  },
+  {
+    id: 5, entity: "TKV", entityColor: "#f2c14e", entityBg: "rgba(242,193,78,0.15)",
+    title: "Nguy cơ đứt gãy chuỗi than",
+    desc: "Chi phí khai thác than hầm lò tăng vọt, đe dọa trực tiếp tới đà sản xuất và cung ứng điện lưới cho toàn miền Bắc.",
+    options: [
+      { label: "Xuất ngân sách bình ổn giá vật tư mỏ", rationale: "Tránh tăng giá điện thứ cấp, nhưng hao hụt quỹ quốc gia.", impact: { cpi: 0.5, cov: 4, roic: -2.0, bud: -12 }, logStr: "[TKV] Quỹ nhà nước can thiệp bình ổn vật tư. Than tiếp tục ra lò, điện được cứu." },
+      { label: "Buông giá than, ép EVN và thị trường gánh", rationale: "Giá cả hàng hóa nảy số, dân cư bất bình nhưng ROIC mỏ được giữ.", impact: { cpi: 1.5, cov: -5, roic: 3.0, bud: 0 }, logStr: "[TKV] Buông giá than tự do. Dây chuyền sản xuất trụ lại nhưng lạm phát leo thang." }
+    ]
+  },
+  {
+    id: 6, entity: "VNA", entityColor: "#7dd3fc", entityBg: "rgba(125,211,252,0.12)",
+    title: "Đề án Giải cứu Hàng không Quốc gia",
+    desc: "Vietnam Airlines đứng trên bờ vực mất thanh khoản. Hệ thống hàng không công ích tới các vùng sâu có nguy cơ đóng cửa.",
+    options: [
+      { label: "Bơm khẩn 12.000 tỷ cứu hãng bay quốc gia", rationale: "Giữ lại thương hiệu và đường bay công ích, kéo lùi hiệu quả chung.", impact: { cpi: 0, cov: 2, roic: -5.0, bud: -25 }, logStr: "[VNA] Bơm vốn khẩn cấp. Hàng không Nhà nước thoát thảm, ngân khố trả giá đắt." },
+      { label: "Thoái vốn, để thị trường đào thải khốc liệt", rationale: "Hàng chục ngàn nhân sự mất việc, nhưng cắt lỗ thành công.", impact: { cpi: -0.5, cov: -7, roic: 4.0, bud: 5 }, logStr: "[VNA] Đạp phanh thoái vốn. Cú sốc thất nghiệp ập tới, nhưng túi tiền Nhà nước an toàn." }
+    ]
+  }
+];
 
-  const loadingPercent = 10 + (tick % 90);
+// ═══════════════════════════════════════════════════════════════════════════
+// BLACK SWANS & POLICIES
+// ═══════════════════════════════════════════════════════════════════════════
+const BLACK_SWANS = [
+  {
+    title: "Bão Siêu Cấp Miền Trung", type: "disaster", emoji: "🌪️",
+    desc: "Bão tàn phá hạ tầng cáp quang và nhà máy điện. Hàng triệu người mất kết nối. Trạng thái khẩn cấp được kích hoạt.",
+    impact: { cpi: 1.0, cov: -8, roic: -3.0, bud: -15 },
+    logStr: "[⚠ TAI ƯƠNG] Bão siêu cấp tàn phá hạ tầng. An sinh xã hội lùi bước."
+  },
+  {
+    title: "Đứt Gãy Vận Tải Biển", type: "geo", emoji: "🚢",
+    desc: "Xung đột địa chính trị làm đóng cửa eo biển. Chi phí nhập khẩu dầu, than đá bay xa, lạm phát nhập khẩu dâng cao.",
+    impact: { cpi: 2.8, cov: -2, roic: 0, bud: 0 },
+    logStr: "[⚠ TAI ƯƠNG] Đứt gãy vận tải toàn cầu! Bóng ma lạm phát bao trùm nền kinh tế."
+  },
+  {
+    title: "Phát Minh Viễn Thông 6G", type: "tech", emoji: "💡",
+    desc: "Nhóm kỹ sư nội địa làm chủ thành công công nghệ phát sóng không gian. Quỹ đầu tư ngoại ồ ạt bơm tiền vào tập đoàn.",
+    impact: { cpi: -0.5, cov: 1, roic: 5.0, bud: 10 },
+    logStr: "[✓ KỲ TÍCH] Đột phá công nghệ lõi. Mạch máu vốn ngoại nuôi dưỡng ROIC."
+  }
+];
+
+const MACRO_POLICIES = [
+  {
+    id: "p_ppp", icon: "🤝", title: "Kết nối Đối tác Công – Tư",
+    desc: "Mở nút thắt cho phép nhà nước thuê hạ tầng tư nhân. Sau những mất mát đầu tư, hiệu quả vốn sẽ phục hồi và bù đắp +1.5 ROIC.",
+    isBuff: "roic"
+  },
+  {
+    id: "p_stabilize", icon: "⚖️", title: "Thiết quân luật Bình ổn Giá",
+    desc: "Siết chặt mọi khung giá thiết yếu. Trực tiếp cắt giảm đà tăng lạm phát -0.4% mỗi quý, đổi lại doanh nghiệp mất máu lợi nhuận.",
+    isBuff: "cpi"
+  },
+  {
+    id: "p_tax", icon: "🏛️", title: "Sắc thuế Thu lợi Siêu Ngạch",
+    desc: "Truy thu lợi nhuận đột biến. Giải khát ngân khố nhà nước ngay +40 Tỷ USD, nhưng dân cư và xã hội chịu bóp nghẹt (-3 An sinh).",
+    isBuff: "bud"
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HELPERS & METER DEFS
+// ═══════════════════════════════════════════════════════════════════════════
+const METER_DEFS = [
+  {
+    key: "cpi", label: "Lạm phát", icon: "📈", limit: "Ngưỡng thua: ≥ 8.0%",
+    getWidth: (v) => Math.min(Math.max((v / 10) * 100, 2), 100),
+    getColor: (v) => (v >= 7.5 ? "#ef4444" : v >= 6.0 ? "#f59e0b" : "#10b981"),
+    format: (v) => v.toFixed(1) + "%", danger: (v) => v >= 7.0,
+  },
+  {
+    key: "cov", label: "Độ phủ An sinh", icon: "🏥", limit: "Ngưỡng thua: ≤ 70%",
+    getWidth: (v) => Math.min(Math.max((v - 50) / 50 * 100, 2), 100),
+    getColor: (v) => (v <= 74 ? "#ef4444" : v <= 82 ? "#f59e0b" : "#10b981"),
+    format: (v) => v.toFixed(0) + "%", danger: (v) => v <= 74,
+  },
+  {
+    key: "roic", label: "Hiệu quả vốn", icon: "💰", limit: "Ngưỡng thua: ≤ −5%",
+    getWidth: (v) => Math.min(Math.max(((v + 10) / 20) * 100, 2), 100),
+    getColor: (v) => (v <= -2.0 ? "#ef4444" : v <= 1.5 ? "#f59e0b" : "#10b981"),
+    format: (v) => v.toFixed(1) + "%", danger: (v) => v <= -2.0,
+  },
+  {
+    key: "bud", label: "Ngân khố (Tỷ $)", icon: "🏦", limit: "Ngưỡng thua: ≤ 0",
+    getWidth: (v) => Math.min(Math.max(v, 2), 100),
+    getColor: (v) => (v <= 20 ? "#ef4444" : v <= 50 ? "#f59e0b" : "#10b981"),
+    format: (v) => v.toFixed(0), danger: (v) => v <= 20,
+  }
+];
+
+function getImpactBadges(impact) {
+  return [
+    { key: "cpi", label: "CPI", val: impact.cpi, bad: impact.cpi > 1.0, good: impact.cpi <= 0 },
+    { key: "cov", label: "An sinh", val: impact.cov, bad: impact.cov < -2, good: impact.cov > 0 },
+    { key: "roic", label: "ROIC", val: impact.roic, bad: impact.roic < -2, good: impact.roic > 0 },
+    { key: "bud", label: "Ngân sách", val: impact.bud, bad: impact.bud < -10, good: impact.bud > 0 },
+  ].map((b) => {
+    const c = b.bad ? "#ff6b6b" : b.good ? "#4ade80" : "#94a3b8";
+    const bg = b.bad ? "rgba(255,107,107,0.15)" : b.good ? "rgba(74,222,128,0.12)" : "rgba(148,163,184,0.1)";
+    return { ...b, color: c, bg: bg, display: (b.val > 0 ? "+" : "") + b.val + (b.key === "bud" ? "B" : b.key !== "cov" ? "%" : "") };
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUBCOMPONENTS: UI PREMIUM 
+// ═══════════════════════════════════════════════════════════════════════════
+
+function PremiumDecisionCard({ option, index, disabled, onClick }) {
+  const badges = getImpactBadges(option.impact);
+  const accent = index === 0
+    ? { base: "#ef4444", glow: "rgba(239,68,68,0.35)", bg: "rgba(239,68,68,0.06)" }
+    : { base: "#3b82f6", glow: "rgba(59,130,246,0.35)", bg: "rgba(59,130,246,0.06)" };
 
   return (
-    <main className="game-page">
-      <header className="game-nav">
-        <a href="#/" className="game-back">
-          <span aria-hidden="true">←</span> Quay lại chuyên đề
-        </a>
-        <div className="game-brand">
-          <span className="brand-badge">VN</span>
-          <span>Mô phỏng chính sách</span>
-        </div>
-      </header>
-
-      <section className="game-stage">
-        <div className="stage-grid">
-          <div className="stage-left">
-            <p className="kicker kicker-dark">Mini-game · Coming soon</p>
-            <h1 className="stage-title">
-              Bạn là nhà <span className="grad">hoạch định chính sách</span> của một tập đoàn nhà nước.
-            </h1>
-            <p className="stage-sub">
-              Trong phiên bản đầy đủ, bạn sẽ điều khiển giá điện, mức đầu tư hạ tầng, và chính sách trợ giá
-              trong 12 quý giả lập. Mỗi quyết định ảnh hưởng tới chỉ số CPI, mức độ phủ sóng dịch vụ và lợi
-              nhuận tập đoàn.
-            </p>
-
-            <div className="stage-meters">
-              <div className="meter">
-                <div className="meter-head">
-                  <span>Biên độ giá điện</span>
-                  <span className="meter-num">±{(tick % 10) + 2}%</span>
-                </div>
-                <div className="meter-track">
-                  <span style={{ width: `${30 + (tick % 40)}%` }} />
-                </div>
-              </div>
-              <div className="meter">
-                <div className="meter-head">
-                  <span>Độ phủ dịch vụ</span>
-                  <span className="meter-num">{87 + (tick % 10)}%</span>
-                </div>
-                <div className="meter-track">
-                  <span className="meter-green" style={{ width: `${70 + (tick % 25)}%` }} />
-                </div>
-              </div>
-              <div className="meter">
-                <div className="meter-head">
-                  <span>Hiệu quả vốn ROIC</span>
-                  <span className="meter-num">{(4.2 + (tick % 20) / 10).toFixed(1)}%</span>
-                </div>
-                <div className="meter-track">
-                  <span className="meter-amber" style={{ width: `${40 + (tick % 35)}%` }} />
-                </div>
-              </div>
-            </div>
-
-            <div className="stage-status">
-              <div className="status-dot" />
-              <span className="status-text">
-                Engine đang được phát triển — phần lập trình dành cho nhóm kỹ thuật.
-              </span>
-            </div>
-
-            <div className="loading-wrap">
-              <div className="loading-bar">
-                <span style={{ width: `${loadingPercent}%` }} />
-              </div>
-              <div className="loading-meta">
-                <span>Build · internal</span>
-                <span>{loadingPercent.toString().padStart(3, "0")} / 100</span>
-              </div>
-            </div>
-          </div>
-
-          <aside className="stage-right" aria-hidden="true">
-            <div className="console">
-              <div className="console-head">
-                <span className="dot-r" />
-                <span className="dot-y" />
-                <span className="dot-g" />
-                <span className="console-title">policy-sim · mln122</span>
-              </div>
-              <div className="console-body">
-                <p>
-                  <span className="c-mute">$</span> init scenario --country VN --sector energy
-                </p>
-                <p>
-                  <span className="c-mute">›</span> Loading macro shocks… <span className="c-ok">ok</span>
-                </p>
-                <p>
-                  <span className="c-mute">›</span> Calibrating EVN / PVN / VNPT…{" "}
-                  <span className="c-ok">ok</span>
-                </p>
-                <p>
-                  <span className="c-mute">›</span> Binding CPI weight → 0.38{" "}
-                  <span className="c-ok">ok</span>
-                </p>
-                <p>
-                  <span className="c-mute">›</span> Waiting for gameplay module…{" "}
-                  <span className="c-warn">pending</span>
-                  <span className="blink">▌</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="bento">
-              <div className="bento-card">
-                <p className="bento-label">Tình huống mẫu</p>
-                <p className="bento-title">Shock giá dầu Brent +22%</p>
-                <p className="bento-sub">Quý 3 / năm mô phỏng</p>
-              </div>
-              <div className="bento-card dark">
-                <p className="bento-label">Mục tiêu vĩ mô</p>
-                <p className="bento-title">Giữ CPI &lt; 4.5%</p>
-                <p className="bento-sub">Trong 4 quý liên tiếp</p>
-              </div>
-              <div className="bento-card wide">
-                <p className="bento-label">Bảng điểm</p>
-                <p className="bento-title">Cân bằng Ổn định — Hiệu quả — Công bằng</p>
-                <p className="bento-sub">
-                  Kết thúc 12 quý, hệ thống tính điểm theo ba trục như mô hình trilemma kinh tế.
-                </p>
-              </div>
-            </div>
-          </aside>
-        </div>
-
-        <footer className="stage-foot">
-          <span>Placeholder của mini-game sẽ được gắn bởi thành viên phụ trách lập trình.</span>
-          <a className="btn-primary" href="#/">
-            Về trang chuyên đề
-          </a>
-        </footer>
-      </section>
-    </main>
+    <button
+      disabled={disabled}
+      onClick={onClick}
+      style={{
+        width: "100%", textAlign: "left",
+        background: `linear-gradient(150deg, ${accent.bg} 0%, rgba(5,15,30,0.8) 100%)`,
+        border: `1.5px solid ${disabled ? "rgba(255,255,255,0.05)" : `${accent.base}50`}`,
+        borderRadius: "20px",
+        padding: "clamp(20px, 2.5vw, 28px)",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.4 : 1,
+        transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        display: "flex", flexDirection: "column", gap: "16px",
+        position: "relative",
+      }}
+      onMouseEnter={(e) => {
+        if (disabled) return;
+        SFX.hover();
+        e.currentTarget.style.transform = "translateY(-6px) scale(1.01)";
+        e.currentTarget.style.boxShadow = `0 20px 40px ${accent.glow}`;
+        e.currentTarget.style.borderColor = accent.base;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0) scale(1)";
+        e.currentTarget.style.boxShadow = "none";
+        e.currentTarget.style.borderColor = `${accent.base}50`;
+      }}
+      onMouseDown={(e) => {
+        if (disabled) return;
+        e.currentTarget.style.transform = "translateY(2px) scale(0.99)";
+      }}
+      onMouseUp={(e) => {
+        if (disabled) return;
+        e.currentTarget.style.transform = "translateY(-6px) scale(1.01)";
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
+        <span style={{
+          flexShrink: 0, width: "42px", height: "42px", borderRadius: "12px",
+          background: `${accent.base}25`, border: `1px solid ${accent.base}60`,
+          color: accent.base, fontFamily: "Manrope, sans-serif", fontWeight: 900,
+          fontSize: "1.2rem", display: "grid", placeItems: "center"
+        }}>
+          {index === 0 ? "A" : "B"}
+        </span>
+        <span style={{ fontFamily: "Manrope, sans-serif", fontWeight: 800, fontSize: "clamp(1.1rem, 1.6vw, 1.3rem)", lineHeight: 1.4, color: "white" }}>
+          {option.label}
+        </span>
+      </div>
+      <p style={{ margin: 0, fontSize: "clamp(0.9rem, 1.2vw, 1rem)", color: "#94a3b8", lineHeight: 1.6, fontFamily: "Source Serif 4, serif", paddingLeft: "58px" }}>
+        {option.rationale}
+      </p>
+      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", paddingLeft: "58px", marginTop: "4px" }}>
+        {badges.map((b) => (
+          <span key={b.key} style={{ padding: "6px 14px", borderRadius: "999px", background: b.bg, border: `1px solid ${b.color}40`, color: b.color, fontFamily: "JetBrains Mono, monospace", fontSize: "0.8rem", fontWeight: 800 }}>
+            {b.label} {b.display}
+          </span>
+        ))}
+      </div>
+    </button>
   );
 }
 
+function AnimatedMeterBar({ def, value }) {
+  const width = def.getWidth(value);
+  const color = def.getColor(value);
+  const danger = def.danger(value);
+  return (
+    <div style={{ padding: "14px", borderRadius: "12px", background: danger ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${danger ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.05)"}`, transition: "all 0.5s ease" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", fontFamily: "Manrope, sans-serif" }}>
+        <span style={{ fontSize: "0.8rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          {def.icon} {def.label}
+        </span>
+        <span style={{ fontSize: "1rem", fontWeight: 900, color: danger ? "#ef4444" : "white", transition: "color 0.5s" }}>
+          {def.format(value)}
+        </span>
+      </div>
+      <div style={{ height: "6px", background: "rgba(255,255,255,0.08)", borderRadius: "3px", overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${width}%`, background: color, borderRadius: "3px", transition: "width 0.8s cubic-bezier(0.16,1,0.3,1), background 0.5s", boxShadow: `0 0 10px ${color}90` }} />
+      </div>
+      <div style={{ marginTop: "8px", fontSize: "0.7rem", color: danger ? "#ef4444" : "#475569", fontFamily: "JetBrains Mono, monospace", fontWeight: danger ? 700 : 500, opacity: 0.8 }}>
+        {danger ? "⚠ BÁO ĐỘNG — " : ""}{def.limit}
+      </div>
+    </div>
+  );
+}
+
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT — PolicySimGame
+// ═══════════════════════════════════════════════════════════════════════════
+function PolicySimGame() {
+  const INIT_STATS = { cpi: 3.8, cov: 90, roic: 5.0, bud: 100 };
+  const INIT_LOGS = [
+    "$ engine --policy-sim --country VN --version V2_PREMIUM",
+    "› [INIT] Module Ngân khố, Cây Chính sách & Black Swan đã Online.",
+    "› Quý 1/12 đã sẵn sàng chờ lệnh điều hành."
+  ];
+
+  const [gameState, setGameState] = useState("start");
+  const [quarter, setQuarter] = useState(1);
+  const [stats, setStats] = useState(INIT_STATS);
+  const [history, setHistory] = useState([INIT_STATS]);
+  const [logs, setLogs] = useState(INIT_LOGS);
+  const [eventIndex, setEventIndex] = useState(0);
+  const [activePolicies, setActivePolicies] = useState([]);
+
+  const [currentBlackSwan, setCurrentBlackSwan] = useState(null);
+  const [transitioning, setTransitioning] = useState(false);
+  const consoleRef = useRef(null);
+
+  useEffect(() => {
+    if (consoleRef.current) consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
+  }, [logs]);
+
+  const resetGame = () => {
+    SFX.bgm(false);
+    setGameState("start");
+    setQuarter(1); setStats(INIT_STATS); setHistory([INIT_STATS]);
+    setLogs(INIT_LOGS); setEventIndex(0); setActivePolicies([]);
+    setCurrentBlackSwan(null); setTransitioning(false);
+  };
+
+  const commitTurn = (newStats, logStrings, stayPhase = false) => {
+    let fStats = { ...newStats };
+    if (!stayPhase && activePolicies.includes("p_stabilize")) fStats.cpi = Math.max(0, parseFloat((fStats.cpi - 0.4).toFixed(2)));
+
+    setStats(fStats);
+    setHistory(p => [...p, fStats]);
+    setLogs(p => [...p, ...logStrings]);
+
+    // Check End
+    let nextSt = "playing"; let sLog = null;
+    if (fStats.cpi >= 8.0) { nextSt = "gameover_cpi"; sLog = "[FATAL] Lạm phát tàn bạo. Nền kinh tế phi mã."; SFX.lose(); }
+    else if (fStats.cov <= 70) { nextSt = "gameover_cov"; sLog = "[FATAL] An sinh xã hội đứt gãy. Đóng băng phúc lợi."; SFX.lose(); }
+    else if (fStats.roic <= -5.0) { nextSt = "gameover_roic"; sLog = "[FATAL] Hiệu quả vốn bốc hơi. Tập đoàn sụp đổ."; SFX.lose(); }
+    else if (fStats.bud <= 0) { nextSt = "gameover_bud"; sLog = "[FATAL] Ngân khố trống rỗng. Mất thanh khoản quốc gia."; SFX.lose(); }
+    else if (quarter >= 12) {
+      if (fStats.cov > 90 && fStats.roic > 0 && fStats.cpi < 6) nextSt = "won_perfect";
+      else if (fStats.cov >= 95 && fStats.roic <= 0) nextSt = "won_populist";
+      else if (fStats.cov <= 75 && fStats.roic >= 5) nextSt = "won_capitalist";
+      else nextSt = "won_normal";
+      sLog = "[SYS] ✓ Hoàn tất 12 quý vòng lặp. Đánh giá thành tích.";
+      SFX.win();
+    }
+
+    if (sLog) setLogs(p => [...p, sLog]);
+
+    if (nextSt !== "playing") {
+      SFX.bgm(false);
+      setGameState(nextSt); setTransitioning(false); return;
+    }
+    if (stayPhase) {
+      setGameState("playing"); setTransitioning(false); return;
+    }
+
+    setTimeout(() => {
+      const nQ = quarter + 1;
+      setQuarter(nQ);
+      setEventIndex(p => p + 1);
+
+      if (nQ === 4 || nQ === 8) {
+        setGameState("policy");
+        setLogs(p => [...p, `› [PHIÊN HỌP LƯỠNG VIỆN] Mở khoá ban hành Nghị Quyết vĩ mô.`]);
+      } else {
+        if (Math.random() < 0.20 && nQ < 12) {
+          const swan = BLACK_SWANS[Math.floor(Math.random() * BLACK_SWANS.length)];
+          setCurrentBlackSwan(swan);
+          setGameState("blackswan");
+          setLogs(p => [...p, `› [⚠️ CẢNH BÁO TỐI KHẨN CẤP] Hiện tượng dị thường tại biên giới / không gian!`]);
+          SFX.alert();
+        } else {
+          setGameState("playing");
+          const ev = GAME_EVENTS[(eventIndex + 1) % GAME_EVENTS.length];
+          setLogs(p => [...p, `› QUÝ ${nQ}/12 — Báo cáo từ ${ev.entity}: ${ev.title}`]);
+        }
+      }
+      setTransitioning(false);
+    }, 800);
+  };
+
+  const handleChoice = (opt) => {
+    if (transitioning) return;
+    SFX.confirm();
+    setTransitioning(true);
+    let imp = { ...opt.impact };
+    if (activePolicies.includes("p_ppp") && imp.cov > 0) imp.roic += 1.5;
+
+    const ns = {
+      cpi: parseFloat((stats.cpi + imp.cpi).toFixed(2)),
+      cov: parseFloat((stats.cov + imp.cov).toFixed(1)),
+      roic: parseFloat((stats.roic + imp.roic).toFixed(2)),
+      bud: parseFloat((stats.bud + imp.bud).toFixed(1)),
+    };
+    const dLog = `   CPI ${stats.cpi}→${ns.cpi}  |  An sinh ${stats.cov}→${ns.cov}%  |  NS ${stats.bud}→${ns.bud}`;
+    commitTurn(ns, [opt.logStr, dLog]);
+  };
+
+  const handlePolicy = (pol) => {
+    SFX.law();
+    setActivePolicies(p => [...p, pol.id]);
+    setGameState("playing");
+    setLogs(p => [...p, `[ĐẠO LUẬT] Ký sắc lệnh: ${pol.title}`]);
+    if (pol.id === "p_tax") {
+      commitTurn({ ...stats, bud: stats.bud + 40, cov: stats.cov - 3 }, ["[THỰC THI] Ngân khố +40 tỷ. Sự phẫn nộ đẩy An sinh lùi 3%."], true);
+    }
+  };
+
+  const handleBlackSwanAck = () => {
+    SFX.confirm();
+    const sw = currentBlackSwan;
+    const ns = {
+      cpi: parseFloat((stats.cpi + sw.impact.cpi).toFixed(2)),
+      cov: parseFloat((stats.cov + sw.impact.cov).toFixed(1)),
+      roic: parseFloat((stats.roic + sw.impact.roic).toFixed(2)),
+      bud: parseFloat((stats.bud + sw.impact.bud).toFixed(1)),
+    };
+    setCurrentBlackSwan(null);
+    commitTurn(ns, [sw.logStr], true);
+  };
+
+  // Màn hình Game Over / Win Premium
+  const EndScreen = () => {
+    const isWin = gameState.startsWith("won");
+    const dict = {
+      won_perfect: { i: "👑", c: "#10b981", t: "Kỹ Trị Xuất Chúng", d: "Đẳng cấp điều hành kinh điển. Mác-Lênin cho rằng Nhà nước điều tiết tinh anh nhất là bảo vệ được song song tích luỹ vốn và bao bọc toàn dân." },
+      won_populist: { i: "🤝", c: "#f59e0b", t: "Nhà Lãnh Đạo Dân Tuý", d: "Phúc lợi bủa vây mọi ngóc ngách, tuy nhiên dòng vốn cạn kiệt. Doanh nghiệp sẽ sớm không còn sức chống đỡ chu kỳ suy thoái tiếp theo." },
+      won_capitalist: { i: "🎩", c: "#3b82f6", t: "Vòng Xoáy Tư Bản", d: "Tích tụ tư bản tối đa theo đúng luận điểm Lênin. Nhưng mặt trái là hố sâu bất bình đẳng và chỉ số an sinh lún sâu." },
+      won_normal: { i: "🎖️", c: "#f1f5f9", t: "Thuyền Trưởng Bền Bỉ", d: "Vượt 12 Quý bão tố. Không tột đỉnh vinh quang nhưng giữ được con tàu vượt trùng khơi." }
+    };
+    const loss = {
+      gameover_cpi: { i: "💥", t: "Bão Lạm Phát", d: "Nền kinh tế bong bóng sụp đổ. Đồng tiền mất giá khiến toàn bộ nỗ lực an sinh biến thành tro bụi." },
+      gameover_cov: { i: "📉", t: "Xã Hội Đứt Gãy", d: "Bạn quên mất chức năng nền tảng của kinh tế Nhà nước không thuần tuý là tích luỹ." },
+      gameover_roic: { i: "💸", t: "Phá Sản Doanh Nghiệp", d: "Tiêu hao toàn bộ năng lượng tự chủ. Các Tập đoàn không còn là trụ cột mà trở thành hố đen nền kinh tế." },
+      gameover_bud: { i: "🏛️", t: "Vỡ Nợ Quốc Gia", d: "Táo bạo nhưng không có điểm dừng. Bơm cứu trợ vô độ làm rỗng ruột Kho bạc Nhà nước." }
+    };
+    const c = isWin ? dict[gameState] : { ...loss[gameState], c: "#ef4444" };
+
+    return (
+      <div style={{ animation: "fadeSlide 0.8s cubic-bezier(0.16,1,0.3,1)", padding: "10px" }}>
+        <div style={{ display: "inline-block", padding: "8px 20px", borderRadius: "999px", background: `${c.c}15`, color: c.c, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.15em", fontSize: "0.8rem", marginBottom: "20px" }}>
+          {isWin ? "NHIỆM KỲ HOÀN TẤT" : "ĐÌNH CHỈ CÔNG TÁC"}
+        </div>
+        <div style={{ display: "flex", gap: "20px", alignItems: "center", marginBottom: "16px" }}>
+          <span style={{ fontSize: "5rem", filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.5))" }}>{c.i}</span>
+          <h1 style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)", color: "white", margin: 0, lineHeight: 1.1, fontFamily: "Manrope", fontWeight: 900 }}>{c.t}</h1>
+        </div>
+        <p style={{ color: "#94a3b8", fontSize: "1.1rem", lineHeight: 1.7, maxWidth: "600px", fontFamily: "Source Serif 4, serif" }}>{c.d}</p>
+        <div style={{ display: "flex", gap: "24px", marginTop: "32px", padding: "24px", background: "rgba(255,255,255,0.03)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)", flexWrap: "wrap" }}>
+          {[
+            { l: "Lạm phát", v: history[history.length - 1].cpi.toFixed(1) + "%", c: "#f59e0b" },
+            { l: "An sinh xã hội", v: history[history.length - 1].cov.toFixed(0) + "%", c: "#10b981" },
+            { l: "Chỉ số ROIC", v: history[history.length - 1].roic.toFixed(1) + "%", c: "#3b82f6" },
+            { l: "Ngân khố (Tỷ USD)", v: history[history.length - 1].bud.toFixed(0), c: "#ef4444" }
+          ].map(s => (
+            <div key={s.l} style={{ flex: 1, minWidth: "120px" }}>
+              <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 800, textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.05em" }}>{s.l}</div>
+              <div style={{ fontSize: "1.5rem", fontWeight: 900, color: s.c }}>{s.v}</div>
+            </div>
+          ))}
+        </div>
+        <button onClick={() => { initAudio(); SFX.click(); resetGame(); }} style={{ marginTop: "40px", padding: "18px 40px", borderRadius: "16px", border: "none", background: "linear-gradient(145deg, #c3282d, #8b0e12)", color: "white", fontWeight: 800, fontSize: "1rem", letterSpacing: "0.05em", cursor: "pointer", boxShadow: "0 10px 30px rgba(195,40,45,0.4)", transition: "transform 0.2s" }} onMouseOver={e => { SFX.hover(); e.currentTarget.style.transform = "translateY(-4px)"; }} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+          🔄 ỦY NHIỆM LẠI TỪ QUÝ 1
+        </button>
+      </div>
+    );
+  };
+
+  // UI Framework
+  const pgStyle = { minHeight: "100dvh", background: "linear-gradient(135deg, #020617 0%, #0f172a 100%)", display: "flex", flexDirection: "column", color: "white", fontFamily: "Manrope, sans-serif" };
+  const navStyle = { padding: "20px 48px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center", backdropFilter: "blur(10px)" };
+  const bdStyle = { flex: 1, display: "grid", gridTemplateColumns: "1fr 380px", maxWidth: "1600px", margin: "0 auto", width: "100%" };
+  const mnStyle = { padding: "48px 64px", borderRight: "1px solid rgba(255,255,255,0.05)", position: "relative" };
+  const sbStyle = { padding: "40px 24px", display: "flex", flexDirection: "column", gap: "20px", background: "linear-gradient(180deg, rgba(255,255,255,0.01) 0%, transparent 100%)" };
+
+  if (gameState === "start") {
+    return (
+      <div style={{ ...pgStyle, justifyContent: "center", alignItems: "center", position: "relative", overflow: "hidden", padding: "40px 20px" }}>
+        <div style={{ position: "absolute", top: "-20%", right: "-10%", width: "600px", height: "600px", background: "radial-gradient(circle, rgba(195,40,45,0.15) 0%, transparent 70%)", filter: "blur(60px)" }} />
+        <div style={{ zIndex: 10, background: "rgba(15,23,42,0.6)", backdropFilter: "blur(20px)", padding: "clamp(32px, 5vw, 64px)", borderRadius: "32px", border: "1px solid rgba(255,255,255,0.08)", maxWidth: "850px", textAlign: "center", boxShadow: "0 40px 100px rgba(0,0,0,0.5)", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ display: "inline-block", padding: "6px 16px", borderRadius: "999px", background: "rgba(30,127,212,0.15)", color: "#3b82f6", fontWeight: 900, marginBottom: "20px", letterSpacing: "0.1em", fontSize: "0.8rem" }}>NHÓM 4 MLN122</div>
+
+          <h1 style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)", fontWeight: 900, margin: "0 0 20px", lineHeight: 1.1, background: "linear-gradient(to right, #ffffff, #94a3b8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            MÔ PHỎNG VĨ MÔ
+          </h1>
+
+          <p style={{ fontSize: "1.1rem", color: "#94a3b8", marginBottom: "32px", lineHeight: 1.7, fontFamily: "Source Serif 4, serif", maxWidth: "90%" }}>
+            Bạn là người điều hành vĩ mô trong 12 Quý. Nhiệm vụ của bạn là đưa ra các quyết định chính sách đối phó với khủng hoảng và <b>Thiên Nga Đen</b>, đồng thời duy trì cân bằng các chỉ số quốc gia.
+          </p>
+
+          <div style={{ display: "flex", gap: "12px", marginBottom: "32px", width: "100%", justifyContent: "space-between" }}>
+            {[
+              { i: "📈", l: "LẠM PHÁT", d: "Kiểm soát giá cả", w: "Thua nếu ≥ 8.0%", c: "#f59e0b" },
+              { i: "🏥", l: "AN SINH", d: "Phúc lợi xã hội", w: "Thua nếu ≤ 70%", c: "#10b981" },
+              { i: "💰", l: "ROIC", d: "Hiệu quả vốn", w: "Thua nếu ≤ −5%", c: "#3b82f6" },
+              { i: "🏦", l: "NGÂN KHỐ", d: "NSNN (Tỷ $)", w: "Thua nếu ≤ 0", c: "#ef4444" }
+            ].map(k => (
+              <div key={k.l} style={{ flex: 1, minWidth: 0, background: "rgba(255,255,255,0.03)", padding: "12px 8px", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.05)", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", transition: "transform 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = "translateY(-4px)"} onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: "center", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "1.5rem" }}>{k.i}</span>
+                  <span style={{ fontSize: "0.8rem", fontWeight: 800, color: k.c, letterSpacing: "0.02em", whiteSpace: "nowrap" }}>{k.l}</span>
+                </div>
+                <div style={{ fontSize: "0.75rem", color: "#94a3b8", lineHeight: 1.3, whiteSpace: "nowrap" }}>{k.d}</div>
+                <div style={{ fontSize: "0.7rem", color: "#ef4444", fontWeight: 700, opacity: 0.8, whiteSpace: "nowrap" }}>{k.w}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ background: "rgba(30,127,212,0.05)", border: "1px solid rgba(30,127,212,0.2)", borderRadius: "16px", padding: "20px 24px", textAlign: "left", marginBottom: "40px", width: "100%", boxSizing: "border-box" }}>
+            <h3 style={{ margin: "0 0 12px 0", color: "#60a5fa", fontSize: "0.95rem", fontWeight: 800, letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: "8px" }}><span>📖</span> HƯỚNG DẪN CƠ BẢN</h3>
+            <ul style={{ margin: 0, paddingLeft: "24px", color: "#cbd5e1", fontSize: "0.95rem", lineHeight: 1.6, fontFamily: "Source Serif 4, serif" }}>
+              <li style={{ marginBottom: "8px" }}>Mỗi Quý bạn sẽ đối mặt với một chính sách, hoặc một sự kiện <b>Thiên Nga Đen</b> căng thẳng.</li>
+              <li style={{ marginBottom: "8px" }}>Quyết định đưa ra luôn phải đánh đổi: ví dụ bảo vệ <b>An sinh</b> thường lấy đi <b>Ngân khố</b>.</li>
+              <li style={{ marginBottom: "8px" }}>Ở <b>Quý 4</b> và <b>Quý 8</b>, bạn được quyền ưu tiên ban hành 1 <b>Đạo luật Vĩ mô</b> để hỗ trợ nền kinh tế.</li>
+              <li>Mục tiêu: Sống sót qua <b>12 Quý</b> mà không để chỉ số nào chạm ngưỡng báo động đỏ. Tùy theo các chỉ số khi kết thúc, bạn sẽ đạt được các danh hiệu khác nhau.</li>
+            </ul>
+          </div>
+
+          <button onClick={() => { initAudio(); SFX.click(); SFX.bgm(true); setGameState("playing"); }} style={{ padding: "20px 48px", background: "linear-gradient(135deg, #c3282d, #8b0e12)", color: "white", border: "none", borderRadius: "16px", fontSize: "1.1rem", fontWeight: 900, letterSpacing: "0.1em", cursor: "pointer", boxShadow: "0 20px 50px rgba(195,40,45,0.4)", transition: "all 0.3s" }} onMouseOver={e => { SFX.hover(); e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 30px 60px rgba(195,40,45,0.6)"; }} onMouseOut={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 20px 50px rgba(195,40,45,0.4)" }}>
+            VÀO PHÒNG ĐIỀU HÀNH
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentEvent = GAME_EVENTS[eventIndex % GAME_EVENTS.length];
+  const ce = currentEvent;
+  return (
+    <div style={pgStyle}>
+      <header style={navStyle}>
+        <a href="#/" onClick={() => SFX.bgm(false)} style={{ color: "#94a3b8", textDecoration: "none", fontWeight: 800, fontSize: "0.85rem", letterSpacing: "0.1em", border: "1px solid rgba(255,255,255,0.1)", padding: "10px 20px", borderRadius: "10px", transition: "all 0.2s" }} onMouseOver={e => { SFX.hover(); e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "white"; }} onMouseOut={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#94a3b8"; }}>← RÚT LUI KHỎI GAME</a>
+        <div style={{ fontWeight: 900, color: "white", fontSize: "1.1rem", letterSpacing: "0.05em" }}>VN <span style={{ color: "#ef4444" }}>MACRO</span> SIMULATOR</div>
+      </header>
+
+      <div style={bdStyle}>
+        <div style={mnStyle}>
+          {gameState === "playing" && (
+            <div style={{ opacity: transitioning ? 0.2 : 1, transition: "opacity 0.6s cubic-bezier(0.16,1,0.3,1)", animation: "fadeSlide 0.5s ease" }}>
+              <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "20px" }}>
+                <span style={{ padding: "6px 16px", background: ce.entityBg, border: `1px solid ${ce.entityColor}40`, color: ce.entityColor, borderRadius: "10px", fontWeight: 900, letterSpacing: "0.1em", fontSize: "0.85rem" }}>
+                  {ce.entity}
+                </span>
+                <span style={{ fontWeight: 800, color: "#64748b", letterSpacing: "0.1em", fontSize: "0.85rem" }}>QUÝ {quarter} / 12</span>
+              </div>
+              <h1 style={{ fontFamily: "Source Serif 4, serif", fontSize: "clamp(2.5rem, 5vw, 3.2rem)", margin: "0 0 24px", lineHeight: 1.1, color: "white" }}>
+                {ce.title}
+              </h1>
+              <p style={{ color: "#94a3b8", fontSize: "1.15rem", lineHeight: 1.7, margin: "0 0 48px", maxWidth: "70ch", fontFamily: "Source Serif 4, serif" }}>
+                {ce.desc}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {ce.options.map((opt, i) => <PremiumDecisionCard key={i} option={opt} index={i} disabled={transitioning} onClick={() => handleChoice(opt)} />)}
+              </div>
+            </div>
+          )}
+
+          {gameState === "policy" && (
+            <div style={{ animation: "fadeIn 0.6s ease" }}>
+              <div style={{ display: "inline-block", padding: "8px 20px", borderRadius: "999px", background: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.4)", fontWeight: 900, letterSpacing: "0.15em", fontSize: "0.8rem", marginBottom: "24px" }}>QUYỀN PHỦ QUYẾT LƯỠNG VIỆN</div>
+              <h1 style={{ fontSize: "clamp(2.5rem, 4vw, 3rem)", margin: "0 0 24px", color: "white", lineHeight: 1.1 }}>Ban Hành Đạo Luật Chiến Lược</h1>
+              <p style={{ color: "#94a3b8", fontSize: "1.1rem", marginBottom: "40px", maxWidth: "60ch", lineHeight: 1.6 }}>Hiến pháp quy định tại Quý {quarter}, bạn có quyền kích hoạt 1 Đạo luật Vĩ mô làm nền tảng định hướng cho hệ thống. Hãy chọn cẩn thận.</p>
+              <div style={{ display: "grid", gap: "20px" }}>
+                {MACRO_POLICIES.filter(p => !activePolicies.includes(p.id)).map(p => (
+                  <button key={p.id} onClick={() => handlePolicy(p)} style={{ width: "100%", padding: "32px", border: "1.5px solid rgba(245,158,11,0.3)", borderRadius: "24px", background: "linear-gradient(135deg, rgba(245,158,11,0.08), rgba(0,0,0,0.5))", textAlign: "left", cursor: "pointer", transition: "all 0.3s" }} onMouseOver={e => { SFX.hover(); e.currentTarget.style.transform = "scale(1.02) translateY(-4px)"; e.currentTarget.style.boxShadow = "0 20px 40px rgba(245,158,11,0.2)"; e.currentTarget.style.borderColor = "#f59e0b"; }} onMouseOut={e => { e.currentTarget.style.transform = "scale(1) translateY(0)"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "rgba(245,158,11,0.3)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "16px" }}>
+                      <span style={{ fontSize: "2.5rem" }}>{p.icon}</span>
+                      <span style={{ fontSize: "1.5rem", fontWeight: 900, color: "white" }}>{p.title}</span>
+                    </div>
+                    <p style={{ fontSize: "1rem", color: "#94a3b8", margin: 0, lineHeight: 1.6, fontFamily: "Source Serif 4, serif" }}>{p.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {gameState === "blackswan" && (
+            <div style={{ padding: "48px", background: "url('https://www.transparenttextures.com/patterns/carbon-fibre.png'), linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(15,23,42,0.9) 100%)", borderRadius: "32px", border: "2px solid rgba(239,68,68,0.5)", animation: "shake 0.5s ease-in-out", boxShadow: "0 0 100px rgba(239,68,68,0.3) inset" }}>
+              <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "24px" }}>
+                <span style={{ padding: "8px 24px", background: "#ef4444", color: "white", fontWeight: 900, borderRadius: "8px", letterSpacing: "0.2em" }}>KHẨN CẤP</span>
+                <span style={{ color: "#ef4444", fontWeight: 800, letterSpacing: "0.1em" }}>THIÊN NGA ĐEN</span>
+              </div>
+              <h1 style={{ fontSize: "clamp(3rem, 5vw, 4rem)", margin: "0 0 24px", color: "white", lineHeight: 1.1 }}>{currentBlackSwan.title} {currentBlackSwan.emoji}</h1>
+              <p style={{ fontSize: "1.2rem", color: "#fca5a5", marginBottom: "40px", lineHeight: 1.6, maxWidth: "60ch" }}>{currentBlackSwan.desc}</p>
+
+              <div style={{ display: "flex", gap: "16px", marginBottom: "48px", flexWrap: "wrap" }}>
+                {getImpactBadges(currentBlackSwan.impact).filter(b => b.val !== 0).map(b => (
+                  <div key={b.key} style={{ padding: "12px 24px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.5)", color: "#ef4444", borderRadius: "12px", fontFamily: "JetBrains Mono", fontSize: "1.1rem", fontWeight: 900 }}>
+                    THIỆT HẠI: {b.label} {b.display}
+                  </div>
+                ))}
+              </div>
+              <button onClick={handleBlackSwanAck} style={{ width: "100%", padding: "24px", background: "#ef4444", color: "white", border: "none", borderRadius: "16px", fontWeight: 900, fontSize: "1.2rem", letterSpacing: "0.1em", cursor: "pointer", transition: "transform 0.2s" }} onMouseOver={e => { SFX.hover(); e.currentTarget.style.transform = "scale(1.02)"; }} onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
+                KÍCH HOẠT QUY TRÌNH CHỐNG CHỊU
+              </button>
+            </div>
+          )}
+
+          {(gameState.startsWith("gameover") || gameState.startsWith("won")) && <EndScreen />}
+        </div>
+
+        <div style={sbStyle}>
+          <div>
+            <div style={{ fontSize: "0.75rem", fontWeight: 900, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "16px" }}>RADAR VĨ MÔ</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {METER_DEFS.map(def => <AnimatedMeterBar key={def.key} def={def} value={stats[def.key]} />)}
+            </div>
+          </div>
+
+          <div style={{ marginTop: "24px", flex: 1, background: "rgba(0,0,0,0.6)", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "12px 16px", background: "rgba(255,255,255,0.03)", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.1em", color: "#64748b", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              DÒNG LỆNH HỆ THỐNG
+            </div>
+            <div ref={consoleRef} style={{ padding: "16px", flex: 1, overflowY: "auto", fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", lineHeight: 1.7, color: "#94a3b8" }}>
+              {logs.map((l, i) => (
+                <div key={i} style={{ color: l.includes("⚠") ? "#ff6b6b" : l.includes("✓") ? "#10b981" : l.includes("LUẬT") ? "#f59e0b" : l.includes("FATAL") ? "#ef4444" : "inherit", marginBottom: "8px" }}>{l}</div>
+              ))}
+              {gameState === "playing" && <div style={{ color: "#3b82f6" }}>› <span className="blink">▌</span></div>}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 function App() {
   const route = useRoute();
   const [activeTheoryId, setActiveTheoryId] = useState(THEORY_ITEMS[0].id);
   const [modalGroupId, setModalGroupId] = useState(null);
   const [openAccordions, setOpenAccordions] = useState([SOLUTION_ITEMS[0].id]);
+  const [quizAnswers, setQuizAnswers] = useState({});
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState(NAV_ITEMS[0].id);
 
@@ -396,6 +943,13 @@ function App() {
     () => GROUP_ITEMS.find((item) => item.id === modalGroupId) || null,
     [modalGroupId]
   );
+
+  const quizStats = useMemo(() => {
+    const answers = Object.values(quizAnswers);
+    const good = answers.filter((item) => item.result === "good").length;
+    const mixed = answers.filter((item) => item.result === "mixed").length;
+    return { good, mixed, answered: answers.length };
+  }, [quizAnswers]);
 
   useEffect(() => {
     if (route !== "home") {
@@ -475,8 +1029,15 @@ function App() {
     );
   };
 
+  const chooseOption = (scenarioId, optionKey, result) => {
+    setQuizAnswers((prev) => ({
+      ...prev,
+      [scenarioId]: { optionKey, result }
+    }));
+  };
+
   if (route === "game") {
-    return <GamePlaceholder />;
+    return <PolicySimGame />;
   }
 
   return (
@@ -820,6 +1381,64 @@ function App() {
                     <p className="tv-value">07 / 12</p>
                     <div className="tv-bar"><span style={{ width: "58%" }} /></div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="quiz">
+          <div className="container">
+            <div className="section-head" data-reveal="">
+              <p className="section-tag">Tranh luận lớp học</p>
+              <h2 className="section-title">Bạn sẽ chọn chính sách nào?</h2>
+              <p className="section-sub">
+                Mỗi lựa chọn đều có đánh đổi. Bấm A hoặc B để xem phản hồi và thảo luận ngay trên lớp.
+              </p>
+            </div>
+
+            <div className="quiz-wrap">
+              {SCENARIOS.map((scenario) => {
+                const answer = quizAnswers[scenario.id];
+
+                return (
+                  <article className="scenario" data-reveal="" key={scenario.id}>
+                    <h4>{scenario.title}</h4>
+                    <p>{scenario.description}</p>
+                    <div className="choice-row">
+                      {scenario.options.map((option) => (
+                        <button
+                          key={option.key}
+                          className={`choice ${answer?.optionKey === option.key ? "selected" : ""}`}
+                          type="button"
+                          onClick={() => chooseOption(scenario.id, option.key, option.result)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div
+                      className={`scenario-result ${answer ? "show" : ""} ${answer?.result === "good" ? "good" : ""
+                        }`}
+                    >
+                      {answer ? QUIZ_FEEDBACK[answer.result] : ""}
+                    </div>
+                  </article>
+                );
+              })}
+
+              <div className="stats" data-reveal="">
+                <div className="stat">
+                  <p className="stat-value">{quizStats.good}</p>
+                  <p className="stat-label">Lựa chọn cân bằng</p>
+                </div>
+                <div className="stat">
+                  <p className="stat-value">{quizStats.mixed}</p>
+                  <p className="stat-label">Lựa chọn cần đánh đổi</p>
+                </div>
+                <div className="stat">
+                  <p className="stat-value">{quizStats.answered}</p>
+                  <p className="stat-label">Tình huống đã trả lời</p>
                 </div>
               </div>
             </div>
