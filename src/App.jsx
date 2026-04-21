@@ -1,4 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import DecisionCard from "./game/components/DecisionCard";
+import EffectOverlay from "./game/components/EffectOverlay";
+import EventScene from "./game/components/EventScene";
+import ImpactPreview from "./game/components/ImpactPreview";
+import OutcomePanel from "./game/components/OutcomePanel";
+import QuarterTimeline from "./game/components/QuarterTimeline";
+import "./game/game.css";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // HỆ THỐNG ÂM THANH (Synth Web Audio API)
@@ -344,61 +351,142 @@ function useRoute() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// GAME CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════
+const BLACK_SWAN_SPAWN_RATE = 0.20;
+const POLICY_PPP_ROIC_BUFF = 1.5;
+const POLICY_STABILIZE_CPI_REDUCTION = 0.4;
+const POLICY_STABILIZE_ROIC_PENALTY = 0.4;
+const POLICY_TAX_BUDGET_BOOST = 40;
+const POLICY_TAX_WELFARE_PENALTY = 3;
+const SAVE_KEY = 'policySimSave';
+
+// Shuffle array utility
+const shuffleArray = (array) => {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
+// Local storage utilities
+const loadGame = (setGameState, setQuarter, setStats, setHistory, setLogs, setEventIndex, setActivePolicies) => {
+  try {
+    const saved = localStorage.getItem(SAVE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      setGameState(data.gameState || "start");
+      setQuarter(data.quarter || 1);
+      setStats(data.stats || INIT_STATS);
+      setHistory(data.history || [INIT_STATS]);
+      setLogs(data.logs || INIT_LOGS);
+      setEventIndex(data.eventIndex || 0);
+      setActivePolicies(data.activePolicies || []);
+    }
+  } catch (e) {}
+};
+
+const saveGame = (gameState, quarter, stats, history, logs, eventIndex, activePolicies) => {
+  const data = {
+    gameState,
+    quarter,
+    stats,
+    history,
+    logs,
+    eventIndex,
+    activePolicies,
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // DỮ LIỆU SỰ KIỆN CHÍNH
 // ═══════════════════════════════════════════════════════════════════════════
 const GAME_EVENTS = [
   {
     id: 1, entity: "EVN", entityColor: "#f2c14e", entityBg: "rgba(242,193,78,0.15)",
     title: "Khủng hoảng thiếu điện mùa khô",
+    description: "Hồ thủy điện cạn nhanh, lưới truyền tải rung lên trong giờ cao điểm và giá than đội chi phí từng phút.",
     desc: "Mực nước hồ thủy điện cảnh báo. Giá than tăng 40%. Biên lợi nhuận EVN thủng đáy. Giải pháp của cấp điều hành là gì?",
+    background: "energy.webp",
+    type: "power",
+    intensity: "high",
+    sceneLabel: "Lưới điện quốc gia",
     options: [
-      { label: "Giữ giá điện — chịu lỗ, lấy ngân sách bình ổn", rationale: "Bảo vệ CPI, người dân không sốc giá.", impact: { cpi: 0, cov: 2, roic: -4.5, bud: -15 }, logStr: "[EVN] Giữ nguyên giá. Hao hụt ngân sách lớn nhưng được lòng dân." },
-      { label: "Tăng giá điện 10% — theo tín hiệu thị trường", rationale: "Bảo vệ dòng vốn, nhưng lạm phát sẽ leo thang.", impact: { cpi: 2.5, cov: -5, roic: 3.0, bud: 0 }, logStr: "[EVN] Tăng giá điện 10%. ROIC phục hồi nhưng lạm phát tăng mạnh." }
+      { label: "Giữ giá điện — chịu lỗ, lấy ngân sách bình ổn", description: "Khóa biểu giá, bơm quỹ bình ổn và ưu tiên hộ dân cư.", rationale: "Bảo vệ CPI, người dân không sốc giá.", previewAnimation: "money-flow", tone: "green", impact: { cpi: 0, cov: 2, roic: -4.5, bud: -10 }, logStr: "[EVN] Giữ nguyên giá. Hao hụt ngân sách lớn nhưng được lòng dân." },
+      { label: "Tăng giá điện 10% — theo tín hiệu thị trường", description: "Cho giá tăng theo chi phí đầu vào, giữ dòng vốn cho hạ tầng.", rationale: "Bảo vệ dòng vốn, nhưng lạm phát sẽ leo thang.", previewAnimation: "rising-chart", tone: "orange", impact: { cpi: 2.5, cov: -5, roic: 3.0, bud: 0 }, logStr: "[EVN] Tăng giá điện 10%. ROIC phục hồi nhưng lạm phát tăng mạnh." }
     ]
   },
   {
     id: 2, entity: "PVN", entityColor: "#7dd3fc", entityBg: "rgba(125,211,252,0.12)",
     title: "Giá dầu Brent lao dốc −38%",
+    description: "Giàn khai thác ngoài khơi hoạt động trong thị trường dầu lạnh băng, ngân sách hụt nhịp thu lớn.",
     desc: "Ngân sách nhà nước hụt thu trầm trọng do dầu thế giới sụt giảm. Sức ép duy trì quy mô thu ngân sách đang đè nặng lên PVN.",
+    background: "oil.webp",
+    type: "oil",
+    intensity: "medium",
+    sceneLabel: "Giàn khoan dầu khí",
     options: [
-      { label: "Ép khai thác tăng 20% — cứu ngân sách", rationale: "Chi phí bơm hút cao làm giảm ROIC dài hạn.", impact: { cpi: 0.5, cov: 0, roic: -2.0, bud: 20 }, logStr: "[PVN] Ép sản lượng tối đa. Cứu được ngân sách nhưng biên lợi nhuận mỏ giảm." },
-      { label: "Cắt sản lượng — bảo tồn mỏ, chờ giá phục hồi", rationale: "Mất nguồn thu ngân sách, một số chương trình an sinh bị hoãn.", impact: { cpi: 0, cov: -4, roic: 1.5, bud: -10 }, logStr: "[PVN] Bảo tồn mỏ. Hiệu quả vốn giữ được, nhưng Nhà nước thâm hụt tài chính." }
+      { label: "Ép khai thác tăng 20% — cứu ngân sách", description: "Đẩy sản lượng tức thời để bù hụt thu, bất chấp biên khai thác xấu.", rationale: "Chi phí bơm hút cao làm giảm ROIC dài hạn.", previewAnimation: "money-flow", tone: "green", impact: { cpi: 0.5, cov: 0, roic: -2.0, bud: 20 }, logStr: "[PVN] Ép sản lượng tối đa. Cứu được ngân sách nhưng biên lợi nhuận mỏ giảm." },
+      { label: "Cắt sản lượng — bảo tồn mỏ, chờ giá phục hồi", description: "Hạ nhịp khai thác, giữ tài sản mỏ và chịu áp lực ngân sách ngắn hạn.", rationale: "Mất nguồn thu ngân sách, một số chương trình an sinh bị hoãn.", previewAnimation: "falling-chart", tone: "blue", impact: { cpi: 0, cov: -4, roic: 1.5, bud: -10 }, logStr: "[PVN] Bảo tồn mỏ. Hiệu quả vốn giữ được, nhưng Nhà nước thâm hụt tài chính." }
     ]
   },
   {
     id: 3, entity: "VNPT", entityColor: "#86efac", entityBg: "rgba(134,239,172,0.12)",
     title: "Tiên phong phủ sóng 5G vùng lõm",
+    description: "Các tháp viễn thông vùng núi chớp tín hiệu yếu, còn bản đồ phủ sóng quốc gia vẫn còn khoảng trống.",
     desc: "Chính phủ yêu cầu phủ sóng 100% vùng sâu bất chấp lỗ. Biên lợi nhuận vùng viễn thông núi đồi và hải đảo hoàn toàn âm.",
+    background: "telecom.webp",
+    type: "telecom",
+    intensity: "low",
+    sceneLabel: "Hạ tầng viễn thông",
     options: [
-      { label: "Dùng 100% vốn tập đoàn triển khai thần tốc", rationale: "Chỉ số an sinh tăng vọt nhưng Ngân sách và ROIC đổ máu.", impact: { cpi: 0, cov: 6, roic: -4.0, bud: -18 }, logStr: "[VNPT] Phủ sóng thành công bằng vốn chủ. Cáp viễn thông tới tận bản làng." },
-      { label: "Hợp tác Viettel/MobiFone dùng chung hạ tầng", rationale: "Tiết kiệm ngân sách nhưng tiến độ phủ sóng chậm hơn.", impact: { cpi: 0.5, cov: 2, roic: 1.0, bud: -5 }, logStr: "[VNPT] Liên minh dùng chung cáp. Ngân sách an toàn, độ phủ tăng vừa phải." }
+      { label: "Dùng 100% vốn tập đoàn triển khai thần tốc", description: "Đổ vốn chủ lực vào điểm lõm, kéo tín hiệu tới vùng sâu ngay lập tức.", rationale: "Chỉ số an sinh tăng vọt nhưng Ngân sách và ROIC đổ máu.", previewAnimation: "network", tone: "green", impact: { cpi: 0, cov: 6, roic: -4.0, bud: -12 }, logStr: "[VNPT] Phủ sóng thành công bằng vốn chủ. Cáp viễn thông tới tận bản làng." },
+      { label: "Hợp tác Viettel/MobiFone dùng chung hạ tầng", description: "Ghép mạng lõi, chia trạm và giảm chi phí triển khai từng vùng.", rationale: "Tiết kiệm ngân sách nhưng tiến độ phủ sóng chậm hơn.", previewAnimation: "network", tone: "blue", impact: { cpi: 0.5, cov: 2, roic: 1.0, bud: -5 }, logStr: "[VNPT] Liên minh dùng chung cáp. Ngân sách an toàn, độ phủ tăng vừa phải." }
     ]
   },
   {
     id: 4, entity: "NHNN", entityColor: "#f4a7aa", entityBg: "rgba(195,40,45,0.15)",
     title: "Nợ xấu ngân hàng sau đại dịch",
+    description: "Sàn tài chính nhấp nháy đỏ, dòng tín dụng co lại và hệ thống ngân hàng quốc doanh đứng trước lựa chọn đau.",
     desc: "Các doanh nghiệp nhỏ kiệt quệ kéo theo nợ xấu ngân hàng quốc doanh tăng. Một gói cứu trợ khẩn cấp đang được xem xét.",
+    background: "finance.webp",
+    type: "economic",
+    intensity: "high",
+    sceneLabel: "Trung tâm tài chính",
     options: [
-      { label: "Bơm ngân sách mua nợ xấu qua VAMC", rationale: "Giải cứu dòng tín dụng, nhưng tiêu tốn ngân sách quốc gia.", impact: { cpi: -0.5, cov: 3, roic: -1.0, bud: -25 }, logStr: "[NHNN] Bơm tiền mua nợ xấu. Doanh nghiệp dễ thở hơn nhưng ngân khố vơi đi." },
-      { label: "Siết tín dụng, yêu cầu tự xử lý nợ", rationale: "Bảo toàn quỹ quốc gia, nhưng hệ lụy phá sản diện rộng.", impact: { cpi: 1.0, cov: -6, roic: 2.5, bud: 0 }, logStr: "[NHNN] Siết hệ thống tín dụng. Lãi suất đè nặng, doanh nghiệp vỡ nợ diện rộng." }
+      { label: "Bơm ngân sách mua nợ xấu qua VAMC", description: "Hấp thụ nợ xấu để tín dụng chảy lại, đổi bằng áp lực ngân khố.", rationale: "Giải cứu dòng tín dụng, nhưng tiêu tốn ngân sách quốc gia.", previewAnimation: "money-flow", tone: "green", impact: { cpi: -0.5, cov: 3, roic: -1.0, bud: -12 }, logStr: "[NHNN] Bơm tiền mua nợ xấu. Doanh nghiệp dễ thở hơn nhưng ngân khố vơi đi." },
+      { label: "Siết tín dụng, yêu cầu tự xử lý nợ", description: "Bảo toàn ngân sách, khóa thanh khoản yếu và để thị trường tự thanh lọc.", rationale: "Bảo toàn quỹ quốc gia, nhưng hệ lụy phá sản diện rộng.", previewAnimation: "falling-chart", tone: "red", impact: { cpi: 1.0, cov: -6, roic: 2.5, bud: 0 }, logStr: "[NHNN] Siết hệ thống tín dụng. Lãi suất đè nặng, doanh nghiệp vỡ nợ diện rộng." }
     ]
   },
   {
     id: 5, entity: "TKV", entityColor: "#f2c14e", entityBg: "rgba(242,193,78,0.15)",
     title: "Nguy cơ đứt gãy chuỗi than",
+    description: "Mỏ hầm lò nóng lên, băng tải than rung giật và nhà máy điện phía Bắc chờ từng chuyến nhiên liệu.",
     desc: "Chi phí khai thác than hầm lò tăng vọt, đe dọa trực tiếp tới đà sản xuất và cung ứng điện lưới cho toàn miền Bắc.",
+    background: "coal.webp",
+    type: "coal",
+    intensity: "medium",
+    sceneLabel: "Chuỗi cung ứng than",
     options: [
-      { label: "Xuất ngân sách bình ổn giá vật tư mỏ", rationale: "Tránh tăng giá điện thứ cấp, nhưng hao hụt quỹ quốc gia.", impact: { cpi: 0.5, cov: 4, roic: -2.0, bud: -12 }, logStr: "[TKV] Quỹ nhà nước can thiệp bình ổn vật tư. Than tiếp tục ra lò, điện được cứu." },
-      { label: "Buông giá than, ép EVN và thị trường gánh", rationale: "Giá cả hàng hóa nảy số, dân cư bất bình nhưng ROIC mỏ được giữ.", impact: { cpi: 1.5, cov: -5, roic: 3.0, bud: 0 }, logStr: "[TKV] Buông giá than tự do. Dây chuyền sản xuất trụ lại nhưng lạm phát leo thang." }
+      { label: "Xuất ngân sách bình ổn giá vật tư mỏ", description: "Ổn định vật tư đầu vào, giữ than ra lò và giảm sốc giá điện dây chuyền.", rationale: "Tránh tăng giá điện thứ cấp, nhưng hao hụt quỹ quốc gia.", previewAnimation: "money-flow", tone: "green", impact: { cpi: 0.5, cov: 4, roic: -2.0, bud: -8 }, logStr: "[TKV] Quỹ nhà nước can thiệp bình ổn vật tư. Than tiếp tục ra lò, điện được cứu." },
+      { label: "Buông giá than, ép EVN và thị trường gánh", description: "Thả giá nhiên liệu theo thị trường, cứu biên lợi nhuận mỏ nhưng tạo sóng giá.", rationale: "Giá cả hàng hóa nảy số, dân cư bất bình nhưng ROIC mỏ được giữ.", previewAnimation: "rising-chart", tone: "orange", impact: { cpi: 1.5, cov: -5, roic: 3.0, bud: 0 }, logStr: "[TKV] Buông giá than tự do. Dây chuyền sản xuất trụ lại nhưng lạm phát leo thang." }
     ]
   },
   {
     id: 6, entity: "VNA", entityColor: "#7dd3fc", entityBg: "rgba(125,211,252,0.12)",
     title: "Đề án Giải cứu Hàng không Quốc gia",
+    description: "Bảng bay quốc gia nhấp nháy cảnh báo, đường bay công ích thưa dần và thanh khoản rơi khỏi vùng an toàn.",
     desc: "Vietnam Airlines đứng trên bờ vực mất thanh khoản. Hệ thống hàng không công ích tới các vùng sâu có nguy cơ đóng cửa.",
+    background: "aviation.webp",
+    type: "aviation",
+    intensity: "high",
+    sceneLabel: "Mạng bay quốc gia",
     options: [
-      { label: "Bơm khẩn 12.000 tỷ cứu hãng bay quốc gia", rationale: "Giữ lại thương hiệu và đường bay công ích, kéo lùi hiệu quả chung.", impact: { cpi: 0, cov: 2, roic: -5.0, bud: -25 }, logStr: "[VNA] Bơm vốn khẩn cấp. Hàng không Nhà nước thoát thảm, ngân khố trả giá đắt." },
-      { label: "Thoái vốn, để thị trường đào thải khốc liệt", rationale: "Hàng chục ngàn nhân sự mất việc, nhưng cắt lỗ thành công.", impact: { cpi: -0.5, cov: -7, roic: 4.0, bud: 5 }, logStr: "[VNA] Đạp phanh thoái vốn. Cú sốc thất nghiệp ập tới, nhưng túi tiền Nhà nước an toàn." }
+      { label: "Bơm khẩn 12.000 tỷ cứu hãng bay quốc gia", description: "Bắc cầu vốn, giữ đường bay công ích và tránh đứt mạng hàng không.", rationale: "Giữ lại thương hiệu và đường bay công ích, kéo lùi hiệu quả chung.", previewAnimation: "air-bridge", tone: "blue", impact: { cpi: 0, cov: 2, roic: -5.0, bud: -15 }, logStr: "[VNA] Bơm vốn khẩn cấp. Hàng không Nhà nước thoát thảm, ngân khố trả giá đắt." },
+      { label: "Thoái vốn, để thị trường đào thải khốc liệt", description: "Rút khỏi gánh lỗ, chấp nhận cú sốc lao động và mạng bay co lại.", rationale: "Hàng chục ngàn nhân sự mất việc, nhưng cắt lỗ thành công.", previewAnimation: "falling-chart", tone: "red", impact: { cpi: -0.5, cov: -7, roic: 4.0, bud: 5 }, logStr: "[VNA] Đạp phanh thoái vốn. Cú sốc thất nghiệp ập tới, nhưng túi tiền Nhà nước an toàn." }
     ]
   }
 ];
@@ -408,19 +496,40 @@ const GAME_EVENTS = [
 // ═══════════════════════════════════════════════════════════════════════════
 const BLACK_SWANS = [
   {
-    title: "Bão Siêu Cấp Miền Trung", type: "disaster", emoji: "🌪️",
+    title: "Bão Siêu Cấp Miền Trung",
+    description: "Mắt bão quét qua miền Trung, lưới điện và cáp quang cùng mất nhịp trong một đêm.",
+    background: "storm.webp",
+    type: "storm",
+    intensity: "high",
+    sceneLabel: "Ứng phó thiên tai",
+    emoji: "🌪️",
+    modeNote: "Biến cố chen ngang: xử lý xong vẫn tiếp tục quý hiện tại.",
     desc: "Bão tàn phá hạ tầng cáp quang và nhà máy điện. Hàng triệu người mất kết nối. Trạng thái khẩn cấp được kích hoạt.",
-    impact: { cpi: 1.0, cov: -8, roic: -3.0, bud: -15 },
+    impact: { cpi: 1.0, cov: -6, roic: -3.0, bud: -10 },
     logStr: "[⚠ TAI ƯƠNG] Bão siêu cấp tàn phá hạ tầng. An sinh xã hội lùi bước."
   },
   {
-    title: "Đứt Gãy Vận Tải Biển", type: "geo", emoji: "🚢",
+    title: "Đứt Gãy Vận Tải Biển",
+    description: "Tín hiệu hàng hải toàn cầu đỏ rực, chi phí nhiên liệu và logistics kéo lạm phát nhập khẩu lên cao.",
+    background: "shipping.webp",
+    type: "shipping",
+    intensity: "high",
+    sceneLabel: "Vận tải biển toàn cầu",
+    emoji: "🚢",
+    modeNote: "Biến cố chen ngang: cú sốc logistics tác động ngay vào chỉ số vĩ mô.",
     desc: "Xung đột địa chính trị làm đóng cửa eo biển. Chi phí nhập khẩu dầu, than đá bay xa, lạm phát nhập khẩu dâng cao.",
-    impact: { cpi: 2.8, cov: -2, roic: 0, bud: 0 },
+    impact: { cpi: 2.0, cov: -2, roic: 0, bud: 0 },
     logStr: "[⚠ TAI ƯƠNG] Đứt gãy vận tải toàn cầu! Bóng ma lạm phát bao trùm nền kinh tế."
   },
   {
-    title: "Phát Minh Viễn Thông 6G", type: "tech", emoji: "💡",
+    title: "Phát Minh Viễn Thông 6G",
+    description: "Phòng thí nghiệm lõi phát sáng, tín hiệu 6G mở khóa dòng vốn công nghệ mới.",
+    background: "telecom.webp",
+    type: "tech",
+    intensity: "low",
+    sceneLabel: "Đột phá công nghệ",
+    emoji: "💡",
+    modeNote: "Biến cố chen ngang tích cực: cơ hội công nghệ có thể cứu hiệu quả vốn.",
     desc: "Nhóm kỹ sư nội địa làm chủ thành công công nghệ phát sóng không gian. Quỹ đầu tư ngoại ồ ạt bơm tiền vào tập đoàn.",
     impact: { cpi: -0.5, cov: 1, roic: 5.0, bud: 10 },
     logStr: "[✓ KỲ TÍCH] Đột phá công nghệ lõi. Mạch máu vốn ngoại nuôi dưỡng ROIC."
@@ -431,16 +540,19 @@ const MACRO_POLICIES = [
   {
     id: "p_ppp", icon: "🤝", title: "Kết nối Đối tác Công – Tư",
     desc: "Mở nút thắt cho phép nhà nước thuê hạ tầng tư nhân. Sau những mất mát đầu tư, hiệu quả vốn sẽ phục hồi và bù đắp +1.5 ROIC.",
+    effect: "Hiệu lực dài hạn: nếu quyết định làm tăng An sinh, ROIC được bù thêm +1.5%.",
     isBuff: "roic"
   },
   {
     id: "p_stabilize", icon: "⚖️", title: "Thiết quân luật Bình ổn Giá",
     desc: "Siết chặt mọi khung giá thiết yếu. Trực tiếp cắt giảm đà tăng lạm phát -0.4% mỗi quý, đổi lại doanh nghiệp mất máu lợi nhuận.",
+    effect: "Hiệu lực dài hạn: sau mỗi quyết định thường, CPI -0.4% nhưng ROIC -0.4%.",
     isBuff: "cpi"
   },
   {
     id: "p_tax", icon: "🏛️", title: "Sắc thuế Thu lợi Siêu Ngạch",
     desc: "Truy thu lợi nhuận đột biến. Giải khát ngân khố nhà nước ngay +40 Tỷ USD, nhưng dân cư và xã hội chịu bóp nghẹt (-3 An sinh).",
+    effect: "Hiệu lực tức thời: Ngân khố +40 tỷ, An sinh -3%.",
     isBuff: "bud"
   }
 ];
@@ -451,115 +563,47 @@ const MACRO_POLICIES = [
 const METER_DEFS = [
   {
     key: "cpi", label: "Lạm phát", icon: "📈", limit: "Ngưỡng thua: ≥ 8.0%",
+    hint: "CPI tăng cao làm giá cả mất kiểm soát. Giữ CPI thấp giúp ổn định đời sống.",
     getWidth: (v) => Math.min(Math.max((v / 10) * 100, 2), 100),
     getColor: (v) => (v >= 7.5 ? "#ef4444" : v >= 6.0 ? "#f59e0b" : "#10b981"),
     format: (v) => v.toFixed(1) + "%", danger: (v) => v >= 7.0,
   },
   {
     key: "cov", label: "Độ phủ An sinh", icon: "🏥", limit: "Ngưỡng thua: ≤ 70%",
+    hint: "An sinh phản ánh khả năng bảo vệ người dân và dịch vụ công ích.",
     getWidth: (v) => Math.min(Math.max((v - 50) / 50 * 100, 2), 100),
     getColor: (v) => (v <= 74 ? "#ef4444" : v <= 82 ? "#f59e0b" : "#10b981"),
     format: (v) => v.toFixed(0) + "%", danger: (v) => v <= 74,
   },
   {
     key: "roic", label: "Hiệu quả vốn", icon: "💰", limit: "Ngưỡng thua: ≤ −5%",
+    hint: "ROIC đo hiệu quả sử dụng vốn của doanh nghiệp nhà nước.",
     getWidth: (v) => Math.min(Math.max(((v + 10) / 20) * 100, 2), 100),
     getColor: (v) => (v <= -2.0 ? "#ef4444" : v <= 1.5 ? "#f59e0b" : "#10b981"),
     format: (v) => v.toFixed(1) + "%", danger: (v) => v <= -2.0,
   },
   {
     key: "bud", label: "Ngân khố (Tỷ $)", icon: "🏦", limit: "Ngưỡng thua: ≤ 0",
+    hint: "Ngân khố là dư địa tài khóa để bình ổn, cứu trợ và đầu tư.",
     getWidth: (v) => Math.min(Math.max(v, 2), 100),
     getColor: (v) => (v <= 20 ? "#ef4444" : v <= 50 ? "#f59e0b" : "#10b981"),
     format: (v) => v.toFixed(0), danger: (v) => v <= 20,
   }
 ];
 
-function getImpactBadges(impact) {
-  return [
-    { key: "cpi", label: "CPI", val: impact.cpi, bad: impact.cpi > 1.0, good: impact.cpi <= 0 },
-    { key: "cov", label: "An sinh", val: impact.cov, bad: impact.cov < -2, good: impact.cov > 0 },
-    { key: "roic", label: "ROIC", val: impact.roic, bad: impact.roic < -2, good: impact.roic > 0 },
-    { key: "bud", label: "Ngân sách", val: impact.bud, bad: impact.bud < -10, good: impact.bud > 0 },
-  ].map((b) => {
-    const c = b.bad ? "#ff6b6b" : b.good ? "#4ade80" : "#94a3b8";
-    const bg = b.bad ? "rgba(255,107,107,0.15)" : b.good ? "rgba(74,222,128,0.12)" : "rgba(148,163,184,0.1)";
-    return { ...b, color: c, bg: bg, display: (b.val > 0 ? "+" : "") + b.val + (b.key === "bud" ? "B" : b.key !== "cov" ? "%" : "") };
-  });
-}
+function getFeedbackTone(impact = {}) {
+  const risk =
+    (impact.cpi > 1 ? 2 : impact.cpi > 0 ? 1 : 0) +
+    (impact.cov < -2 ? 2 : impact.cov < 0 ? 1 : 0) +
+    (impact.roic < -2 ? 2 : impact.roic < 0 ? 1 : 0) +
+    (impact.bud < -10 ? 2 : impact.bud < 0 ? 1 : 0);
+  const relief =
+    (impact.cpi < 0 ? 1 : 0) +
+    (impact.cov > 0 ? 1 : 0) +
+    (impact.roic > 0 ? 1 : 0) +
+    (impact.bud > 0 ? 1 : 0);
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SUBCOMPONENTS: UI PREMIUM 
-// ═══════════════════════════════════════════════════════════════════════════
-
-function PremiumDecisionCard({ option, index, disabled, onClick }) {
-  const badges = getImpactBadges(option.impact);
-  const accent = index === 0
-    ? { base: "#ef4444", glow: "rgba(239,68,68,0.35)", bg: "rgba(239,68,68,0.06)" }
-    : { base: "#3b82f6", glow: "rgba(59,130,246,0.35)", bg: "rgba(59,130,246,0.06)" };
-
-  return (
-    <button
-      disabled={disabled}
-      onClick={onClick}
-      style={{
-        width: "100%", textAlign: "left",
-        background: `linear-gradient(150deg, ${accent.bg} 0%, rgba(5,15,30,0.8) 100%)`,
-        border: `1.5px solid ${disabled ? "rgba(255,255,255,0.05)" : `${accent.base}50`}`,
-        borderRadius: "20px",
-        padding: "clamp(20px, 2.5vw, 28px)",
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.4 : 1,
-        transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
-        display: "flex", flexDirection: "column", gap: "16px",
-        position: "relative",
-      }}
-      onMouseEnter={(e) => {
-        if (disabled) return;
-        SFX.hover();
-        e.currentTarget.style.transform = "translateY(-6px) scale(1.01)";
-        e.currentTarget.style.boxShadow = `0 20px 40px ${accent.glow}`;
-        e.currentTarget.style.borderColor = accent.base;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0) scale(1)";
-        e.currentTarget.style.boxShadow = "none";
-        e.currentTarget.style.borderColor = `${accent.base}50`;
-      }}
-      onMouseDown={(e) => {
-        if (disabled) return;
-        e.currentTarget.style.transform = "translateY(2px) scale(0.99)";
-      }}
-      onMouseUp={(e) => {
-        if (disabled) return;
-        e.currentTarget.style.transform = "translateY(-6px) scale(1.01)";
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
-        <span style={{
-          flexShrink: 0, width: "42px", height: "42px", borderRadius: "12px",
-          background: `${accent.base}25`, border: `1px solid ${accent.base}60`,
-          color: accent.base, fontFamily: "Manrope, sans-serif", fontWeight: 900,
-          fontSize: "1.2rem", display: "grid", placeItems: "center"
-        }}>
-          {index === 0 ? "A" : "B"}
-        </span>
-        <span style={{ fontFamily: "Manrope, sans-serif", fontWeight: 800, fontSize: "clamp(1.1rem, 1.6vw, 1.3rem)", lineHeight: 1.4, color: "white" }}>
-          {option.label}
-        </span>
-      </div>
-      <p style={{ margin: 0, fontSize: "clamp(0.9rem, 1.2vw, 1rem)", color: "#94a3b8", lineHeight: 1.6, fontFamily: "Source Serif 4, serif", paddingLeft: "58px" }}>
-        {option.rationale}
-      </p>
-      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", paddingLeft: "58px", marginTop: "4px" }}>
-        {badges.map((b) => (
-          <span key={b.key} style={{ padding: "6px 14px", borderRadius: "999px", background: b.bg, border: `1px solid ${b.color}40`, color: b.color, fontFamily: "JetBrains Mono, monospace", fontSize: "0.8rem", fontWeight: 800 }}>
-            {b.label} {b.display}
-          </span>
-        ))}
-      </div>
-    </button>
-  );
+  return risk > relief ? "bad" : "good";
 }
 
 function AnimatedMeterBar({ def, value }) {
@@ -567,7 +611,7 @@ function AnimatedMeterBar({ def, value }) {
   const color = def.getColor(value);
   const danger = def.danger(value);
   return (
-    <div style={{ padding: "14px", borderRadius: "12px", background: danger ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${danger ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.05)"}`, transition: "all 0.5s ease" }}>
+    <div title={def.hint} style={{ padding: "14px", borderRadius: "12px", background: danger ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${danger ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.05)"}`, transition: "all 0.5s ease" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", fontFamily: "Manrope, sans-serif" }}>
         <span style={{ fontSize: "0.8rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
           {def.icon} {def.label}
@@ -594,8 +638,8 @@ function AnimatedMeterBar({ def, value }) {
 function PolicySimGame() {
   const INIT_STATS = { cpi: 3.8, cov: 90, roic: 5.0, bud: 100 };
   const INIT_LOGS = [
-    "$ engine --policy-sim --country VN --version V2_PREMIUM",
-    "› [INIT] Module Ngân khố, Cây Chính sách & Black Swan đã Online.",
+    "$ khởi-động --mô-phỏng-chính-sách --quốc-gia VN --phiên-bản V3",
+    "› [KHỞI TẠO] Module Ngân khố, Cây Chính sách & Thiên Nga Đen đã sẵn sàng.",
     "› Quý 1/12 đã sẵn sàng chờ lệnh điều hành."
   ];
 
@@ -607,42 +651,69 @@ function PolicySimGame() {
   const [eventIndex, setEventIndex] = useState(0);
   const [activePolicies, setActivePolicies] = useState([]);
 
+  const [shuffledEvents, setShuffledEvents] = useState(shuffleArray(GAME_EVENTS));
+
+  useEffect(() => {
+    loadGame(setGameState, setQuarter, setStats, setHistory, setLogs, setEventIndex, setActivePolicies);
+  }, []);
+
   const [currentBlackSwan, setCurrentBlackSwan] = useState(null);
   const [transitioning, setTransitioning] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const [lastOutcome, setLastOutcome] = useState(null);
   const consoleRef = useRef(null);
+  const outcomeTimerRef = useRef(null);
 
   useEffect(() => {
     if (consoleRef.current) consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
   }, [logs]);
+
+  useEffect(() => () => {
+    if (outcomeTimerRef.current) window.clearTimeout(outcomeTimerRef.current);
+  }, []);
+
+  const showOutcome = (payload) => {
+    if (outcomeTimerRef.current) window.clearTimeout(outcomeTimerRef.current);
+    setLastOutcome({ id: Date.now(), ...payload });
+    outcomeTimerRef.current = window.setTimeout(() => setLastOutcome(null), 3400);
+  };
 
   const resetGame = () => {
     SFX.bgm(false);
     setGameState("start");
     setQuarter(1); setStats(INIT_STATS); setHistory([INIT_STATS]);
     setLogs(INIT_LOGS); setEventIndex(0); setActivePolicies([]);
-    setCurrentBlackSwan(null); setTransitioning(false);
+    setShuffledEvents(shuffleArray(GAME_EVENTS));
+    setCurrentBlackSwan(null); setTransitioning(false); setFeedback(null); setLastOutcome(null);
+    localStorage.removeItem(SAVE_KEY);
   };
 
   const commitTurn = (newStats, logStrings, stayPhase = false) => {
     let fStats = { ...newStats };
-    if (!stayPhase && activePolicies.includes("p_stabilize")) fStats.cpi = Math.max(0, parseFloat((fStats.cpi - 0.4).toFixed(2)));
+    if (!stayPhase && activePolicies.includes("p_stabilize")) {
+      fStats.cpi = Math.max(0, parseFloat((fStats.cpi - POLICY_STABILIZE_CPI_REDUCTION).toFixed(2)));
+      fStats.roic = parseFloat((fStats.roic - POLICY_STABILIZE_ROIC_PENALTY).toFixed(2));
+      logStrings = [...logStrings, "[HIỆU LỰC ĐẠO LUẬT] Bình ổn giá giảm CPI 0.4%, nhưng ROIC hao 0.4%."];
+    }
 
     setStats(fStats);
     setHistory(p => [...p, fStats]);
     setLogs(p => [...p, ...logStrings]);
 
+    setTimeout(() => saveGame(gameState, quarter, fStats, history, logs, eventIndex, activePolicies), 0);
+
     // Check End
     let nextSt = "playing"; let sLog = null;
-    if (fStats.cpi >= 8.0) { nextSt = "gameover_cpi"; sLog = "[FATAL] Lạm phát tàn bạo. Nền kinh tế phi mã."; SFX.lose(); }
-    else if (fStats.cov <= 70) { nextSt = "gameover_cov"; sLog = "[FATAL] An sinh xã hội đứt gãy. Đóng băng phúc lợi."; SFX.lose(); }
-    else if (fStats.roic <= -5.0) { nextSt = "gameover_roic"; sLog = "[FATAL] Hiệu quả vốn bốc hơi. Tập đoàn sụp đổ."; SFX.lose(); }
-    else if (fStats.bud <= 0) { nextSt = "gameover_bud"; sLog = "[FATAL] Ngân khố trống rỗng. Mất thanh khoản quốc gia."; SFX.lose(); }
+    if (fStats.cpi >= 8.0) { nextSt = "gameover_cpi"; sLog = "[SỰ CỐ NGHIÊM TRỌNG] Lạm phát tàn bạo. Nền kinh tế phi mã."; SFX.lose(); }
+    else if (fStats.cov <= 70) { nextSt = "gameover_cov"; sLog = "[SỰ CỐ NGHIÊM TRỌNG] An sinh xã hội đứt gãy. Đóng băng phúc lợi."; SFX.lose(); }
+    else if (fStats.roic <= -5.0) { nextSt = "gameover_roic"; sLog = "[SỰ CỐ NGHIÊM TRỌNG] Hiệu quả vốn bốc hơi. Tập đoàn sụp đổ."; SFX.lose(); }
+    else if (fStats.bud <= 0) { nextSt = "gameover_bud"; sLog = "[SỰ CỐ NGHIÊM TRỌNG] Ngân khố trống rỗng. Mất thanh khoản quốc gia."; SFX.lose(); }
     else if (quarter >= 12) {
       if (fStats.cov > 90 && fStats.roic > 0 && fStats.cpi < 6) nextSt = "won_perfect";
       else if (fStats.cov >= 95 && fStats.roic <= 0) nextSt = "won_populist";
       else if (fStats.cov <= 75 && fStats.roic >= 5) nextSt = "won_capitalist";
       else nextSt = "won_normal";
-      sLog = "[SYS] ✓ Hoàn tất 12 quý vòng lặp. Đánh giá thành tích.";
+      sLog = "[HỆ THỐNG] ✓ Hoàn tất 12 quý điều hành. Đánh giá thành tích.";
       SFX.win();
     }
 
@@ -665,15 +736,15 @@ function PolicySimGame() {
         setGameState("policy");
         setLogs(p => [...p, `› [PHIÊN HỌP LƯỠNG VIỆN] Mở khoá ban hành Nghị Quyết vĩ mô.`]);
       } else {
-        if (Math.random() < 0.20 && nQ < 12) {
+        if (Math.random() < BLACK_SWAN_SPAWN_RATE && nQ < 12) {
           const swan = BLACK_SWANS[Math.floor(Math.random() * BLACK_SWANS.length)];
           setCurrentBlackSwan(swan);
           setGameState("blackswan");
-          setLogs(p => [...p, `› [⚠️ CẢNH BÁO TỐI KHẨN CẤP] Hiện tượng dị thường tại biên giới / không gian!`]);
+          setLogs(p => [...p, `› [⚠️ CẢNH BÁO TỐI KHẨN CẤP] Biến cố chen ngang xuất hiện, cần xử lý trước khi tiếp tục quý hiện tại.`]);
           SFX.alert();
         } else {
           setGameState("playing");
-          const ev = GAME_EVENTS[(eventIndex + 1) % GAME_EVENTS.length];
+          const ev = shuffledEvents[(eventIndex + 1) % shuffledEvents.length];
           setLogs(p => [...p, `› QUÝ ${nQ}/12 — Báo cáo từ ${ev.entity}: ${ev.title}`]);
         }
       }
@@ -685,8 +756,10 @@ function PolicySimGame() {
     if (transitioning) return;
     SFX.confirm();
     setTransitioning(true);
+    setFeedback({ id: `${Date.now()}-${opt.label}`, tone: getFeedbackTone(opt.impact) });
+    window.setTimeout(() => setFeedback(null), 900);
     let imp = { ...opt.impact };
-    if (activePolicies.includes("p_ppp") && imp.cov > 0) imp.roic += 1.5;
+    if (activePolicies.includes("p_ppp") && imp.cov > 0) imp.roic += POLICY_PPP_ROIC_BUFF;
 
     const ns = {
       cpi: parseFloat((stats.cpi + imp.cpi).toFixed(2)),
@@ -694,8 +767,15 @@ function PolicySimGame() {
       roic: parseFloat((stats.roic + imp.roic).toFixed(2)),
       bud: parseFloat((stats.bud + imp.bud).toFixed(1)),
     };
+    showOutcome({
+      kind: "Báo cáo sau quyết định",
+      title: opt.label,
+      tone: getFeedbackTone(opt.impact),
+      before: stats,
+      after: ns,
+    });
     const dLog = `   CPI ${stats.cpi}→${ns.cpi}  |  An sinh ${stats.cov}→${ns.cov}%  |  NS ${stats.bud}→${ns.bud}`;
-    commitTurn(ns, [opt.logStr, dLog]);
+    window.setTimeout(() => commitTurn(ns, [opt.logStr, dLog]), 300);
   };
 
   const handlePolicy = (pol) => {
@@ -704,21 +784,43 @@ function PolicySimGame() {
     setGameState("playing");
     setLogs(p => [...p, `[ĐẠO LUẬT] Ký sắc lệnh: ${pol.title}`]);
     if (pol.id === "p_tax") {
-      commitTurn({ ...stats, bud: stats.bud + 40, cov: stats.cov - 3 }, ["[THỰC THI] Ngân khố +40 tỷ. Sự phẫn nộ đẩy An sinh lùi 3%."], true);
+      const ns = { ...stats, bud: stats.bud + POLICY_TAX_BUDGET_BOOST, cov: stats.cov - POLICY_TAX_WELFARE_PENALTY };
+      showOutcome({
+        kind: "Hiệu lực đạo luật",
+        title: pol.title,
+        tone: getFeedbackTone({ cpi: 0, cov: -3, roic: 0, bud: 40 }),
+        before: stats,
+        after: ns,
+      });
+      commitTurn(ns, ["[THỰC THI] Ngân khố +40 tỷ. Sự phẫn nộ đẩy An sinh lùi 3%."], true);
     }
   };
 
   const handleBlackSwanAck = () => {
+    if (transitioning || !currentBlackSwan) return;
     SFX.confirm();
+    setTransitioning(true);
     const sw = currentBlackSwan;
+    const swanTone = getFeedbackTone(sw.impact);
+    setFeedback({ id: `${Date.now()}-${sw.title}`, tone: swanTone });
+    window.setTimeout(() => setFeedback(null), 900);
     const ns = {
       cpi: parseFloat((stats.cpi + sw.impact.cpi).toFixed(2)),
       cov: parseFloat((stats.cov + sw.impact.cov).toFixed(1)),
       roic: parseFloat((stats.roic + sw.impact.roic).toFixed(2)),
       bud: parseFloat((stats.bud + sw.impact.bud).toFixed(1)),
     };
-    setCurrentBlackSwan(null);
-    commitTurn(ns, [sw.logStr], true);
+    showOutcome({
+      kind: swanTone === "good" ? "Cơ hội từ biến cố" : "Thiệt hại từ biến cố",
+      title: sw.title,
+      tone: swanTone,
+      before: stats,
+      after: ns,
+    });
+    window.setTimeout(() => {
+      setCurrentBlackSwan(null);
+      commitTurn(ns, [sw.logStr], true);
+    }, 300);
   };
 
   // Màn hình Game Over / Win Premium
@@ -771,9 +873,6 @@ function PolicySimGame() {
   // UI Framework
   const pgStyle = { minHeight: "100dvh", background: "linear-gradient(135deg, #020617 0%, #0f172a 100%)", display: "flex", flexDirection: "column", color: "white", fontFamily: "Manrope, sans-serif" };
   const navStyle = { padding: "20px 48px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center", backdropFilter: "blur(10px)" };
-  const bdStyle = { flex: 1, display: "grid", gridTemplateColumns: "1fr 380px", maxWidth: "1600px", margin: "0 auto", width: "100%" };
-  const mnStyle = { padding: "48px 64px", borderRight: "1px solid rgba(255,255,255,0.05)", position: "relative" };
-  const sbStyle = { padding: "40px 24px", display: "flex", flexDirection: "column", gap: "20px", background: "linear-gradient(180deg, rgba(255,255,255,0.01) 0%, transparent 100%)" };
 
   if (gameState === "start") {
     return (
@@ -826,50 +925,66 @@ function PolicySimGame() {
     );
   }
 
-  const currentEvent = GAME_EVENTS[eventIndex % GAME_EVENTS.length];
+  const currentEvent = shuffledEvents[eventIndex % shuffledEvents.length];
   const ce = currentEvent;
   return (
     <div style={pgStyle}>
+      <EffectOverlay feedback={feedback} />
+      <OutcomePanel outcome={lastOutcome} />
       <header style={navStyle}>
         <a href="#/" onClick={() => SFX.bgm(false)} style={{ color: "#94a3b8", textDecoration: "none", fontWeight: 800, fontSize: "0.85rem", letterSpacing: "0.1em", border: "1px solid rgba(255,255,255,0.1)", padding: "10px 20px", borderRadius: "10px", transition: "all 0.2s" }} onMouseOver={e => { SFX.hover(); e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "white"; }} onMouseOut={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#94a3b8"; }}>← RÚT LUI KHỎI GAME</a>
-        <div style={{ fontWeight: 900, color: "white", fontSize: "1.1rem", letterSpacing: "0.05em" }}>VN <span style={{ color: "#ef4444" }}>MACRO</span> SIMULATOR</div>
+        <div style={{ fontWeight: 900, color: "white", fontSize: "1.1rem", letterSpacing: "0.05em" }}>MÔ PHỎNG <span style={{ color: "#ef4444" }}>ĐIỀU HÀNH</span> VĨ MÔ</div>
       </header>
 
-      <div style={bdStyle}>
-        <div style={mnStyle}>
+      <div className="psim-game-body">
+        <main className="psim-main">
           {gameState === "playing" && (
-            <div style={{ opacity: transitioning ? 0.2 : 1, transition: "opacity 0.6s cubic-bezier(0.16,1,0.3,1)", animation: "fadeSlide 0.5s ease" }}>
-              <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "20px" }}>
-                <span style={{ padding: "6px 16px", background: ce.entityBg, border: `1px solid ${ce.entityColor}40`, color: ce.entityColor, borderRadius: "10px", fontWeight: 900, letterSpacing: "0.1em", fontSize: "0.85rem" }}>
-                  {ce.entity}
-                </span>
-                <span style={{ fontWeight: 800, color: "#64748b", letterSpacing: "0.1em", fontSize: "0.85rem" }}>QUÝ {quarter} / 12</span>
-              </div>
-              <h1 style={{ fontFamily: "Source Serif 4, serif", fontSize: "clamp(2.5rem, 5vw, 3.2rem)", margin: "0 0 24px", lineHeight: 1.1, color: "white" }}>
-                {ce.title}
-              </h1>
-              <p style={{ color: "#94a3b8", fontSize: "1.15rem", lineHeight: 1.7, margin: "0 0 48px", maxWidth: "70ch", fontFamily: "Source Serif 4, serif" }}>
-                {ce.desc}
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                {ce.options.map((opt, i) => <PremiumDecisionCard key={i} option={opt} index={i} disabled={transitioning} onClick={() => handleChoice(opt)} />)}
-              </div>
+            <div className={`psim-turn-shell ${transitioning ? "is-frozen" : ""}`}>
+              <EventScene event={ce} quarter={quarter} transitioning={transitioning} />
+              <section className="psim-decision-panel" aria-live="polite">
+                <div className="psim-event-header">
+                  <div className="psim-event-meta">
+                    <span
+                      className="psim-event-chip"
+                      style={{ background: ce.entityBg, border: `1px solid ${ce.entityColor}40`, color: ce.entityColor }}
+                    >
+                      {ce.entity}
+                    </span>
+                    <span className="psim-quarter-chip">QUÝ {quarter} / 12</span>
+                  </div>
+                  <h1>{ce.title}</h1>
+                  <p>{ce.description || ce.desc}</p>
+                </div>
+                <div className="psim-decision-grid">
+                  {ce.options.map((opt, i) => (
+                    <DecisionCard
+                      key={`${ce.id}-${i}`}
+                      option={opt}
+                      index={i}
+                      disabled={transitioning}
+                      onHover={() => SFX.hover()}
+                      onSelect={() => handleChoice(opt)}
+                    />
+                  ))}
+                </div>
+              </section>
             </div>
           )}
 
           {gameState === "policy" && (
-            <div style={{ animation: "fadeIn 0.6s ease" }}>
-              <div style={{ display: "inline-block", padding: "8px 20px", borderRadius: "999px", background: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.4)", fontWeight: 900, letterSpacing: "0.15em", fontSize: "0.8rem", marginBottom: "24px" }}>QUYỀN PHỦ QUYẾT LƯỠNG VIỆN</div>
-              <h1 style={{ fontSize: "clamp(2.5rem, 4vw, 3rem)", margin: "0 0 24px", color: "white", lineHeight: 1.1 }}>Ban Hành Đạo Luật Chiến Lược</h1>
-              <p style={{ color: "#94a3b8", fontSize: "1.1rem", marginBottom: "40px", maxWidth: "60ch", lineHeight: 1.6 }}>Hiến pháp quy định tại Quý {quarter}, bạn có quyền kích hoạt 1 Đạo luật Vĩ mô làm nền tảng định hướng cho hệ thống. Hãy chọn cẩn thận.</p>
-              <div style={{ display: "grid", gap: "20px" }}>
+            <div className="psim-policy-panel">
+              <div className="psim-policy-label">PHIÊN HỌP CHÍNH SÁCH · QUÝ {quarter}</div>
+              <h1>Ban hành đạo luật chiến lược</h1>
+              <p>Đây là quyền chọn trước khi xử lý sự kiện của quý hiện tại. Mỗi đạo luật tạo một hiệu ứng dài hạn hoặc tác động tức thời lên hệ thống.</p>
+              <div className="psim-policy-grid">
                 {MACRO_POLICIES.filter(p => !activePolicies.includes(p.id)).map(p => (
-                  <button key={p.id} onClick={() => handlePolicy(p)} style={{ width: "100%", padding: "32px", border: "1.5px solid rgba(245,158,11,0.3)", borderRadius: "24px", background: "linear-gradient(135deg, rgba(245,158,11,0.08), rgba(0,0,0,0.5))", textAlign: "left", cursor: "pointer", transition: "all 0.3s" }} onMouseOver={e => { SFX.hover(); e.currentTarget.style.transform = "scale(1.02) translateY(-4px)"; e.currentTarget.style.boxShadow = "0 20px 40px rgba(245,158,11,0.2)"; e.currentTarget.style.borderColor = "#f59e0b"; }} onMouseOut={e => { e.currentTarget.style.transform = "scale(1) translateY(0)"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.borderColor = "rgba(245,158,11,0.3)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "16px" }}>
-                      <span style={{ fontSize: "2.5rem" }}>{p.icon}</span>
-                      <span style={{ fontSize: "1.5rem", fontWeight: 900, color: "white" }}>{p.title}</span>
+                  <button key={p.id} className="psim-policy-card" type="button" onClick={() => handlePolicy(p)} onMouseOver={() => SFX.hover()}>
+                    <div className="psim-policy-card-head">
+                      <span>{p.icon}</span>
+                      <strong>{p.title}</strong>
                     </div>
-                    <p style={{ fontSize: "1rem", color: "#94a3b8", margin: 0, lineHeight: 1.6, fontFamily: "Source Serif 4, serif" }}>{p.desc}</p>
+                    <p>{p.desc}</p>
+                    <small>{p.effect}</small>
                   </button>
                 ))}
               </div>
@@ -877,33 +992,47 @@ function PolicySimGame() {
           )}
 
           {gameState === "blackswan" && (
-            <div style={{ padding: "48px", background: "url('https://www.transparenttextures.com/patterns/carbon-fibre.png'), linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(15,23,42,0.9) 100%)", borderRadius: "32px", border: "2px solid rgba(239,68,68,0.5)", animation: "shake 0.5s ease-in-out", boxShadow: "0 0 100px rgba(239,68,68,0.3) inset" }}>
-              <div style={{ display: "flex", gap: "16px", alignItems: "center", marginBottom: "24px" }}>
-                <span style={{ padding: "8px 24px", background: "#ef4444", color: "white", fontWeight: 900, borderRadius: "8px", letterSpacing: "0.2em" }}>KHẨN CẤP</span>
-                <span style={{ color: "#ef4444", fontWeight: 800, letterSpacing: "0.1em" }}>THIÊN NGA ĐEN</span>
+            <div className="psim-black-swan-shell">
+              <EventScene event={currentBlackSwan} quarter={quarter} transitioning={transitioning} />
+              <div className="psim-crisis-panel">
+                <span className="psim-crisis-label">KHẨN CẤP · THIÊN NGA ĐEN</span>
+                <h1>{currentBlackSwan.title} {currentBlackSwan.emoji}</h1>
+                <p>{currentBlackSwan.description || currentBlackSwan.desc}</p>
+                <div className="psim-crisis-note">{currentBlackSwan.modeNote}</div>
+                <ImpactPreview impact={currentBlackSwan.impact} showZero={false} />
+                <div className="psim-crisis-actions">
+                  <button
+                    className="psim-crisis-button"
+                    type="button"
+                    disabled={transitioning}
+                    onClick={handleBlackSwanAck}
+                    onMouseOver={() => SFX.hover()}
+                  >
+                    {getFeedbackTone(currentBlackSwan.impact) === "good" ? "TIẾP NHẬN CƠ HỘI" : "KÍCH HOẠT QUY TRÌNH CHỐNG CHỊU"}
+                  </button>
+                </div>
               </div>
-              <h1 style={{ fontSize: "clamp(3rem, 5vw, 4rem)", margin: "0 0 24px", color: "white", lineHeight: 1.1 }}>{currentBlackSwan.title} {currentBlackSwan.emoji}</h1>
-              <p style={{ fontSize: "1.2rem", color: "#fca5a5", marginBottom: "40px", lineHeight: 1.6, maxWidth: "60ch" }}>{currentBlackSwan.desc}</p>
-
-              <div style={{ display: "flex", gap: "16px", marginBottom: "48px", flexWrap: "wrap" }}>
-                {getImpactBadges(currentBlackSwan.impact).filter(b => b.val !== 0).map(b => (
-                  <div key={b.key} style={{ padding: "12px 24px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.5)", color: "#ef4444", borderRadius: "12px", fontFamily: "JetBrains Mono", fontSize: "1.1rem", fontWeight: 900 }}>
-                    THIỆT HẠI: {b.label} {b.display}
-                  </div>
-                ))}
-              </div>
-              <button onClick={handleBlackSwanAck} style={{ width: "100%", padding: "24px", background: "#ef4444", color: "white", border: "none", borderRadius: "16px", fontWeight: 900, fontSize: "1.2rem", letterSpacing: "0.1em", cursor: "pointer", transition: "transform 0.2s" }} onMouseOver={e => { SFX.hover(); e.currentTarget.style.transform = "scale(1.02)"; }} onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
-                KÍCH HOẠT QUY TRÌNH CHỐNG CHỊU
-              </button>
             </div>
           )}
 
           {(gameState.startsWith("gameover") || gameState.startsWith("won")) && <EndScreen />}
-        </div>
+        </main>
 
-        <div style={sbStyle}>
+        <aside className="psim-sidebar">
+          <QuarterTimeline quarter={quarter} />
+          <section className="psim-active-laws">
+            <div className="psim-sidebar-title">ĐẠO LUẬT ĐANG HIỆU LỰC</div>
+            {activePolicies.length === 0 ? (
+              <p>Chưa ban hành đạo luật nào.</p>
+            ) : (
+              activePolicies.map((id) => {
+                const policy = MACRO_POLICIES.find((item) => item.id === id);
+                return policy ? <span key={id}>{policy.icon} {policy.title}</span> : null;
+              })
+            )}
+          </section>
           <div>
-            <div style={{ fontSize: "0.75rem", fontWeight: 900, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "16px" }}>RADAR VĨ MÔ</div>
+            <div className="psim-sidebar-title">BẢNG ĐIỀU KHIỂN VĨ MÔ</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {METER_DEFS.map(def => <AnimatedMeterBar key={def.key} def={def} value={stats[def.key]} />)}
             </div>
@@ -915,12 +1044,12 @@ function PolicySimGame() {
             </div>
             <div ref={consoleRef} style={{ padding: "16px", flex: 1, overflowY: "auto", fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", lineHeight: 1.7, color: "#94a3b8" }}>
               {logs.map((l, i) => (
-                <div key={i} style={{ color: l.includes("⚠") ? "#ff6b6b" : l.includes("✓") ? "#10b981" : l.includes("LUẬT") ? "#f59e0b" : l.includes("FATAL") ? "#ef4444" : "inherit", marginBottom: "8px" }}>{l}</div>
+                <div key={i} style={{ color: l.includes("⚠") ? "#ff6b6b" : l.includes("✓") ? "#10b981" : l.includes("LUẬT") ? "#f59e0b" : l.includes("SỰ CỐ") ? "#ef4444" : "inherit", marginBottom: "8px" }}>{l}</div>
               ))}
               {gameState === "playing" && <div style={{ color: "#3b82f6" }}>› <span className="blink">▌</span></div>}
             </div>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   );
