@@ -525,19 +525,22 @@ const MACRO_POLICIES = [
     id: "p_ppp", icon: "🤝", title: "Kết nối Đối tác Công – Tư",
     desc: "Mở nút thắt cho phép nhà nước thuê hạ tầng tư nhân. Sau những mất mát đầu tư, hiệu quả vốn sẽ phục hồi và bù đắp +1.5 ROIC.",
     effect: "Hiệu lực dài hạn: nếu quyết định làm tăng An sinh, ROIC được bù thêm +1.5%.",
-    isBuff: "roic"
+    isBuff: "roic",
+    summary: "+1.5% ROIC"
   },
   {
     id: "p_stabilize", icon: "⚖️", title: "Thiết quân luật Bình ổn Giá",
     desc: "Siết chặt mọi khung giá thiết yếu. Trực tiếp cắt giảm đà tăng lạm phát -0.4% mỗi quý, đổi lại doanh nghiệp mất máu lợi nhuận.",
     effect: "Hiệu lực dài hạn: sau mỗi quyết định thường, CPI -0.4% nhưng ROIC -0.4%.",
-    isBuff: "cpi"
+    isBuff: "cpi",
+    summary: "CPI -0.4%, ROIC -0.4%"
   },
   {
     id: "p_tax", icon: "🏛️", title: "Sắc thuế Thu lợi Siêu Ngạch",
     desc: "Truy thu lợi nhuận đột biến. Giải khát ngân khố nhà nước ngay +40 Tỷ USD, nhưng dân cư và xã hội chịu bóp nghẹt (-3 An sinh).",
     effect: "Hiệu lực tức thời: Ngân khố +40 tỷ, An sinh -3%.",
-    isBuff: "bud"
+    isBuff: "bud",
+    summary: "+40 tỷ NS, -3% An sinh"
   }
 ];
 
@@ -546,32 +549,32 @@ const MACRO_POLICIES = [
 // ═══════════════════════════════════════════════════════════════════════════
 const METER_DEFS = [
   {
-    key: "cpi", label: "Lạm phát", icon: "📈", limit: "Ngưỡng thua: ≥ 8.0%",
+    key: "cpi", label: "Lạm phát", icon: "📈", limit: "Tối đa: 8.0%", markerPos: 80,
     hint: "CPI tăng cao làm giá cả mất kiểm soát. Giữ CPI thấp giúp ổn định đời sống.",
     getWidth: (v) => Math.min(Math.max((v / 10) * 100, 2), 100),
     getColor: (v) => (v >= 7.5 ? "#ef4444" : v >= 6.0 ? "#f59e0b" : "#10b981"),
     format: (v) => v.toFixed(1) + "%", danger: (v) => v >= 7.0,
   },
   {
-    key: "cov", label: "Độ phủ An sinh", icon: "🏥", limit: "Ngưỡng thua: ≤ 70%",
+    key: "cov", label: "An sinh", icon: "🏥", limit: "Tối thiểu: 70%", markerPos: 40,
     hint: "An sinh phản ánh khả năng bảo vệ người dân và dịch vụ công ích.",
     getWidth: (v) => Math.min(Math.max((v - 50) / 50 * 100, 2), 100),
     getColor: (v) => (v <= 74 ? "#ef4444" : v <= 82 ? "#f59e0b" : "#10b981"),
     format: (v) => v.toFixed(0) + "%", danger: (v) => v <= 74,
   },
   {
-    key: "roic", label: "Hiệu quả vốn", icon: "💰", limit: "Ngưỡng thua: ≤ −5%",
+    key: "roic", label: "Hiệu quả vốn", icon: "💰", limit: "Tối thiểu: -5%", markerPos: 25,
     hint: "ROIC đo hiệu quả sử dụng vốn của doanh nghiệp nhà nước.",
     getWidth: (v) => Math.min(Math.max(((v + 10) / 20) * 100, 2), 100),
     getColor: (v) => (v <= -2.0 ? "#ef4444" : v <= 1.5 ? "#f59e0b" : "#10b981"),
     format: (v) => v.toFixed(1) + "%", danger: (v) => v <= -2.0,
   },
   {
-    key: "bud", label: "Ngân khố (Tỷ $)", icon: "🏦", limit: "Ngưỡng thua: ≤ 0",
+    key: "bud", label: "Ngân khố", icon: "🏦", limit: "Tối thiểu: 0", markerPos: 5,
     hint: "Ngân khố là dư địa tài khóa để bình ổn, cứu trợ và đầu tư.",
     getWidth: (v) => Math.min(Math.max(v, 2), 100),
     getColor: (v) => (v <= 20 ? "#ef4444" : v <= 50 ? "#f59e0b" : "#10b981"),
-    format: (v) => v.toFixed(0), danger: (v) => v <= 20,
+    format: (v) => v.toFixed(0) + " tỷ", danger: (v) => v <= 20,
   }
 ];
 
@@ -590,31 +593,65 @@ function getFeedbackTone(impact = {}) {
   return risk > relief ? "bad" : "good";
 }
 
-function AnimatedMeterBar({ def, value }) {
-  const width = def.getWidth(value);
-  const color = def.getColor(value);
+function calculateLeadershipStyle(stats, history) {
+  // Simple logic to categorize the player based on final results
+  if (stats.cov >= 95 && stats.roic <= 1) return {
+    label: "LÃNH ĐẠO DÂN TUÝ",
+    style: "populist",
+    desc: "Bạn đặt con người lên trên hết. Mọi chính sách đều hướng về an sinh, dù đôi khi làm 'tuột xích' dòng vốn kinh tế."
+  };
+  if (stats.roic >= 6 && stats.cov <= 80) return {
+    label: "NHÀ KỸ TRỊ QUYẾT ĐOÁN",
+    style: "technocrat",
+    desc: "Bạn ưu tiên hiệu suất và tích lũy. Nền kinh tế tăng trưởng mạnh mẽ nhưng xã hội đang chịu áp lực lớn từ sự đánh đổi."
+  };
+  if (stats.cpi <= 4 && stats.bud >= 60 && stats.cov >= 85) return {
+    label: "TINH ANH QUẢN TRỊ",
+    style: "elite",
+    desc: "Sự cân bằng tuyệt mỹ. Bạn điều hành đất nước bằng bàn tay sắt bọc nhung, giữ vững mọi chỉ số trong tầm kiểm soát."
+  };
+  if (stats.cpi >= 7) return {
+    label: "ĐIỀU HÀNH THỰC DỤNG",
+    style: "pragmatist",
+    desc: "Bạn chấp nhận rủi ro lạm phát để cứu vãn các mục tiêu khác. Một lựa chọn đầy hơi thở thực tế trong bối cảnh bão tố."
+  };
+  return {
+    label: "THUYỀN TRƯỞNG BỀN BỈ",
+    style: "stable",
+    desc: "Vượt qua 12 quý đầy sóng gió. Bạn giữ được sự ổn định cho quốc gia, không quá cực đoan về bất cứ phe phái nào."
+  };
+}
+
+function CompactStatPill({ def, value }) {
   const danger = def.danger(value);
+  const color = def.getColor(value);
+  const progressWidth = def.getWidth(value);
+
   return (
-    <div title={def.hint} style={{ padding: "14px", borderRadius: "12px", background: danger ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${danger ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.05)"}`, transition: "all 0.5s ease" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", fontFamily: "Manrope, sans-serif" }}>
-        <span style={{ fontSize: "0.8rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          {def.icon} {def.label}
-        </span>
-        <span style={{ fontSize: "1rem", fontWeight: 900, color: danger ? "#ef4444" : "white", transition: "color 0.5s" }}>
+    <div
+      className={`psim-stat-pill ${danger ? "is-danger" : ""}`}
+      title={`${def.hint}`}
+    >
+      <div className="psim-stat-pill-main">
+        <span className="psim-stat-pill-icon">{def.icon}</span>
+        <div className="psim-stat-pill-info">
+          <span className="psim-stat-pill-label">{def.label}</span>
+          <span className="psim-stat-pill-threshold" style={{ color: danger ? "#fca5a5" : "#94a3b8" }}>{def.limit}</span>
+        </div>
+        <span className="psim-stat-pill-value" style={{ color: danger ? "#ef4444" : color }}>
           {def.format(value)}
         </span>
       </div>
-      <div style={{ height: "6px", background: "rgba(255,255,255,0.08)", borderRadius: "3px", overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${width}%`, background: color, borderRadius: "3px", transition: "width 0.8s cubic-bezier(0.16,1,0.3,1), background 0.5s", boxShadow: `0 0 10px ${color}90` }} />
-      </div>
-      <div style={{ marginTop: "8px", fontSize: "0.7rem", color: danger ? "#ef4444" : "#475569", fontFamily: "JetBrains Mono, monospace", fontWeight: danger ? 700 : 500, opacity: 0.8 }}>
-        {danger ? "⚠ BÁO ĐỘNG — " : ""}{def.limit}
+      <div className="psim-stat-pill-bar-bg">
+        <div 
+          className="psim-stat-pill-bar-fill" 
+          style={{ width: `${progressWidth}%`, backgroundColor: color }}
+        />
+        <div className="psim-stat-pill-marker" style={{ left: `${def.markerPos}%` }} />
       </div>
     </div>
   );
 }
-
-
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT — PolicySimGame
@@ -645,6 +682,7 @@ function PolicySimGame() {
   const [transitioning, setTransitioning] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [lastOutcome, setLastOutcome] = useState(null);
+  const [executingLabel, setExecutingLabel] = useState("");
   const consoleRef = useRef(null);
   const outcomeTimerRef = useRef(null);
 
@@ -740,6 +778,7 @@ function PolicySimGame() {
     if (transitioning) return;
     SFX.confirm();
     setTransitioning(true);
+    setExecutingLabel(`Đang thực thi: ${opt.label}...`);
     setFeedback({ id: `${Date.now()}-${opt.label}`, tone: getFeedbackTone(opt.impact) });
     window.setTimeout(() => setFeedback(null), 900);
     let imp = { ...opt.impact };
@@ -759,25 +798,32 @@ function PolicySimGame() {
       after: ns,
     });
     const dLog = `   CPI ${stats.cpi}→${ns.cpi}  |  An sinh ${stats.cov}→${ns.cov}%  |  NS ${stats.bud}→${ns.bud}`;
-    window.setTimeout(() => commitTurn(ns, [opt.logStr, dLog]), 300);
+    window.setTimeout(() => {
+      setExecutingLabel("");
+      commitTurn(ns, [opt.logStr, dLog]);
+    }, 1200);
   };
 
   const handlePolicy = (pol) => {
     SFX.law();
     setActivePolicies(p => [...p, pol.id]);
-    setGameState("playing");
-    setLogs(p => [...p, `[ĐẠO LUẬT] Ký sắc lệnh: ${pol.title}`]);
-    if (pol.id === "p_tax") {
-      const ns = { ...stats, bud: stats.bud + POLICY_TAX_BUDGET_BOOST, cov: stats.cov - POLICY_TAX_WELFARE_PENALTY };
-      showOutcome({
-        kind: "Hiệu lực đạo luật",
-        title: pol.title,
-        tone: getFeedbackTone({ cpi: 0, cov: -3, roic: 0, bud: 40 }),
-        before: stats,
-        after: ns,
-      });
-      commitTurn(ns, ["[THỰC THI] Ngân khố +40 tỷ. Sự phẫn nộ đẩy An sinh lùi 3%."], true);
-    }
+    setExecutingLabel(`Ban hành đạo luật: ${pol.title}...`);
+    window.setTimeout(() => {
+      setExecutingLabel("");
+      setGameState("playing");
+      setLogs(p => [...p, `[ĐẠO LUẬT] Ký sắc lệnh: ${pol.title}`]);
+      if (pol.id === "p_tax") {
+        const ns = { ...stats, bud: stats.bud + POLICY_TAX_BUDGET_BOOST, cov: stats.cov - POLICY_TAX_WELFARE_PENALTY };
+        showOutcome({
+          kind: "Hiệu lực đạo luật",
+          title: pol.title,
+          tone: getFeedbackTone({ cpi: 0, cov: -3, roic: 0, bud: 40 }),
+          before: stats,
+          after: ns,
+        });
+        commitTurn(ns, ["[THỰC THI] Ngân khố +40 tỷ. Sự phẫn nộ đẩy An sinh lùi 3%."], true);
+      }
+    }, 1200);
   };
 
   const handleBlackSwanAck = () => {
@@ -785,6 +831,7 @@ function PolicySimGame() {
     SFX.confirm();
     setTransitioning(true);
     const sw = currentBlackSwan;
+    setExecutingLabel(`Phản ứng biến cố: ${sw.title}...`);
     const swanTone = getFeedbackTone(sw.impact);
     setFeedback({ id: `${Date.now()}-${sw.title}`, tone: swanTone });
     window.setTimeout(() => setFeedback(null), 900);
@@ -802,9 +849,10 @@ function PolicySimGame() {
       after: ns,
     });
     window.setTimeout(() => {
+      setExecutingLabel("");
       setCurrentBlackSwan(null);
       commitTurn(ns, [sw.logStr], true);
-    }, 300);
+    }, 1200);
   };
 
   // Màn hình Game Over / Win Premium
@@ -823,17 +871,29 @@ function PolicySimGame() {
       gameover_bud: { i: "🏛️", t: "Vỡ Nợ Quốc Gia", d: "Táo bạo nhưng không có điểm dừng. Bơm cứu trợ vô độ làm rỗng ruột Kho bạc Nhà nước." }
     };
     const c = isWin ? dict[gameState] : { ...loss[gameState], c: "#ef4444" };
+    const style = isWin ? calculateLeadershipStyle(history[history.length - 1], history) : null;
 
     return (
       <div style={{ animation: "fadeSlide 0.8s cubic-bezier(0.16,1,0.3,1)", padding: "10px" }}>
-        <div style={{ display: "inline-block", padding: "8px 20px", borderRadius: "999px", background: `${c.c}15`, color: c.c, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.15em", fontSize: "0.8rem", marginBottom: "20px" }}>
-          {isWin ? "NHIỆM KỲ HOÀN TẤT" : "ĐÌNH CHỈ CÔNG TÁC"}
+        <div style={{ display: "flex", gap: "12px", marginBottom: "20px" }}>
+          <div style={{ display: "inline-block", padding: "8px 20px", borderRadius: "999px", background: `${c.c}15`, color: c.c, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.15em", fontSize: "0.8rem" }}>
+            {isWin ? "NHIỆM KỲ HOÀN TẤT" : "ĐÌNH CHỈ CÔNG TÁC"}
+          </div>
+          {style && (
+            <div style={{ display: "inline-block", padding: "8px 20px", borderRadius: "999px", background: "rgba(255,255,255,0.1)", color: "white", fontWeight: 900, fontSize: "0.8rem", letterSpacing: "0.05em" }}>
+              💎 {style.label}
+            </div>
+          )}
         </div>
+        
         <div style={{ display: "flex", gap: "20px", alignItems: "center", marginBottom: "16px" }}>
           <span style={{ fontSize: "5rem", filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.5))" }}>{c.i}</span>
           <h1 style={{ fontSize: "clamp(2rem, 4vw, 3.5rem)", color: "white", margin: 0, lineHeight: 1.1, fontFamily: "Manrope", fontWeight: 900 }}>{c.t}</h1>
         </div>
-        <p style={{ color: "#94a3b8", fontSize: "1.1rem", lineHeight: 1.7, maxWidth: "600px", fontFamily: "Source Serif 4, serif" }}>{c.d}</p>
+        <p style={{ color: "#94a3b8", fontSize: "1.1rem", lineHeight: 1.7, maxWidth: "600px", fontFamily: "Source Serif 4, serif", marginBottom: "24px" }}>
+          {style ? style.desc : c.d}
+        </p>
+
         <div style={{ display: "flex", gap: "24px", marginTop: "32px", padding: "24px", background: "rgba(255,255,255,0.03)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.08)", flexWrap: "wrap" }}>
           {[
             { l: "Lạm phát", v: history[history.length - 1].cpi.toFixed(1) + "%", c: "#f59e0b" },
@@ -911,129 +971,162 @@ function PolicySimGame() {
 
   const currentEvent = shuffledEvents[eventIndex % shuffledEvents.length];
   const ce = currentEvent;
+  const sceneEvent = gameState === "blackswan" && currentBlackSwan ? currentBlackSwan : ce;
+
   return (
-    <div style={pgStyle}>
+    <div className="psim-cinema-root">
       <EffectOverlay feedback={feedback} />
       <OutcomePanel outcome={lastOutcome} />
-      <header style={navStyle}>
-        <a href="#/" onClick={() => SFX.bgm(false)} style={{ color: "#94a3b8", textDecoration: "none", fontWeight: 800, fontSize: "0.85rem", letterSpacing: "0.1em", border: "1px solid rgba(255,255,255,0.1)", padding: "10px 20px", borderRadius: "10px", transition: "all 0.2s" }} onMouseOver={e => { SFX.hover(); e.currentTarget.style.background = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "white"; }} onMouseOut={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#94a3b8"; }}>← RÚT LUI KHỎI GAME</a>
-        <div style={{ fontWeight: 900, color: "white", fontSize: "1.1rem", letterSpacing: "0.05em" }}>MÔ PHỎNG <span style={{ color: "#ef4444" }}>ĐIỀU HÀNH</span> VĨ MÔ</div>
+
+      {/* ── Fullscreen Background Scene ── */}
+      <EventScene event={sceneEvent} quarter={quarter} transitioning={transitioning} />
+
+      {/* ── Top HUD Bar ── */}
+      <header className="psim-hud-bar">
+        <a
+          href="#/"
+          className="psim-hud-back"
+          onClick={() => SFX.bgm(false)}
+          onMouseOver={() => SFX.hover()}
+        >
+          ← RÚT LUI
+        </a>
+
+        <div className="psim-hud-timeline">
+          {Array.from({ length: 12 }, (_, i) => i + 1).map(q => {
+            const isPolicy = q === 4 || q === 8;
+            const cls = q < quarter ? "done" : q === quarter ? "current" : "future";
+            return (
+              <span
+                key={q}
+                className={`psim-hud-dot ${cls} ${isPolicy ? "policy" : ""}`}
+                title={isPolicy ? `Quý ${q}: Ban hành đạo luật` : `Quý ${q}`}
+              >
+                {isPolicy ? "⚖" : q}
+              </span>
+            );
+          })}
+        </div>
+
+        <div className="psim-hud-stats">
+          {METER_DEFS.map(def => (
+            <CompactStatPill key={def.key} def={def} value={stats[def.key]} />
+          ))}
+          {activePolicies.length > 0 && (
+            <div className="psim-hud-laws">
+              {activePolicies.map(id => {
+                const pol = MACRO_POLICIES.find(p => p.id === id);
+                return pol ? (
+                  <div key={id} className="psim-law-tag" title={pol.effect}>
+                    <span className="psim-law-tag-icon">{pol.icon}</span>
+                    <div className="psim-law-tag-content">
+                      <span className="psim-law-tag-label">{pol.title}</span>
+                      <span className="psim-law-tag-summary">{pol.summary}</span>
+                    </div>
+                  </div>
+                ) : null;
+              })}
+            </div>
+          )}
+        </div>
       </header>
 
-      <div className="psim-game-body">
-        <main className="psim-main">
-          {gameState === "playing" && (
-            <div className={`psim-turn-shell ${transitioning ? "is-frozen" : ""}`}>
-              <EventScene event={ce} quarter={quarter} transitioning={transitioning} />
-              <section className="psim-decision-panel" aria-live="polite">
-                <div className="psim-event-header">
-                  <div className="psim-event-meta">
-                    <span
-                      className="psim-event-chip"
-                      style={{ background: ce.entityBg, border: `1px solid ${ce.entityColor}40`, color: ce.entityColor }}
-                    >
-                      {ce.entity}
-                    </span>
-                    <span className="psim-quarter-chip">QUÝ {quarter} / 12</span>
-                  </div>
-                  <h1>{ce.title}</h1>
-                  <p>{ce.description || ce.desc}</p>
-                </div>
-                <div className="psim-decision-grid">
-                  {ce.options.map((opt, i) => (
-                    <DecisionCard
-                      key={`${ce.id}-${i}`}
-                      option={opt}
-                      index={i}
-                      disabled={transitioning}
-                      onHover={() => SFX.hover()}
-                      onSelect={() => handleChoice(opt)}
-                    />
-                  ))}
-                </div>
-              </section>
-            </div>
-          )}
+      {/* ── Implementation Status Message ── */}
+      {executingLabel && (
+        <div className="psim-status-msg">
+          <span>{executingLabel}</span>
+        </div>
+      )}
 
-          {gameState === "policy" && (
-            <div className="psim-policy-panel">
-              <div className="psim-policy-label">PHIÊN HỌP CHÍNH SÁCH · QUÝ {quarter}</div>
-              <h1>Ban hành đạo luật chiến lược</h1>
-              <p>Đây là quyền chọn trước khi xử lý sự kiện của quý hiện tại. Mỗi đạo luật tạo một hiệu ứng dài hạn hoặc tác động tức thời lên hệ thống.</p>
-              <div className="psim-policy-grid">
-                {MACRO_POLICIES.filter(p => !activePolicies.includes(p.id)).map(p => (
-                  <button key={p.id} className="psim-policy-card" type="button" onClick={() => handlePolicy(p)} onMouseOver={() => SFX.hover()}>
-                    <div className="psim-policy-card-head">
-                      <span>{p.icon}</span>
-                      <strong>{p.title}</strong>
-                    </div>
-                    <p>{p.desc}</p>
-                    <small>{p.effect}</small>
-                  </button>
-                ))}
+      {/* ── Content Layer (overlaid on scene) ── */}
+      <div className={`psim-cinema-content ${transitioning ? "is-frozen" : ""}`}>
+
+        {/* PLAYING */}
+        {gameState === "playing" && (
+          <div className="psim-cinema-playing" aria-live="polite">
+            <div className="psim-cinema-event-info">
+              <div className="psim-cinema-badges">
+                <span
+                  className="psim-event-chip"
+                  style={{ background: ce.entityBg, border: `1px solid ${ce.entityColor}40`, color: ce.entityColor }}
+                >
+                  {ce.entity}
+                </span>
+                <span className="psim-quarter-chip">QUÝ {quarter} / 12</span>
               </div>
+              <h1 className="psim-cinema-title">{ce.title}</h1>
+              <p className="psim-cinema-desc">{ce.desc || ce.description}</p>
             </div>
-          )}
-
-          {gameState === "blackswan" && (
-            <div className="psim-black-swan-shell">
-              <EventScene event={currentBlackSwan} quarter={quarter} transitioning={transitioning} />
-              <div className="psim-crisis-panel">
-                <span className="psim-crisis-label">KHẨN CẤP · THIÊN NGA ĐEN</span>
-                <h1>{currentBlackSwan.title} {currentBlackSwan.emoji}</h1>
-                <p>{currentBlackSwan.description || currentBlackSwan.desc}</p>
-                <div className="psim-crisis-note">{currentBlackSwan.modeNote}</div>
-                <ImpactPreview impact={currentBlackSwan.impact} showZero={false} />
-                <div className="psim-crisis-actions">
-                  <button
-                    className="psim-crisis-button"
-                    type="button"
-                    disabled={transitioning}
-                    onClick={handleBlackSwanAck}
-                    onMouseOver={() => SFX.hover()}
-                  >
-                    {getFeedbackTone(currentBlackSwan.impact) === "good" ? "TIẾP NHẬN CƠ HỘI" : "KÍCH HOẠT QUY TRÌNH CHỐNG CHỊU"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {(gameState.startsWith("gameover") || gameState.startsWith("won")) && <EndScreen />}
-        </main>
-
-        <aside className="psim-sidebar">
-          <QuarterTimeline quarter={quarter} />
-          <section className="psim-active-laws">
-            <div className="psim-sidebar-title">ĐẠO LUẬT ĐANG HIỆU LỰC</div>
-            {activePolicies.length === 0 ? (
-              <p>Chưa ban hành đạo luật nào.</p>
-            ) : (
-              activePolicies.map((id) => {
-                const policy = MACRO_POLICIES.find((item) => item.id === id);
-                return policy ? <span key={id}>{policy.icon} {policy.title}</span> : null;
-              })
-            )}
-          </section>
-          <div>
-            <div className="psim-sidebar-title">BẢNG ĐIỀU KHIỂN VĨ MÔ</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {METER_DEFS.map(def => <AnimatedMeterBar key={def.key} def={def} value={stats[def.key]} />)}
-            </div>
-          </div>
-
-          <div style={{ marginTop: "24px", flex: 1, background: "rgba(0,0,0,0.6)", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            <div style={{ padding: "12px 16px", background: "rgba(255,255,255,0.03)", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.1em", color: "#64748b", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-              DÒNG LỆNH HỆ THỐNG
-            </div>
-            <div ref={consoleRef} style={{ padding: "16px", flex: 1, overflowY: "auto", fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", lineHeight: 1.7, color: "#94a3b8" }}>
-              {logs.map((l, i) => (
-                <div key={i} style={{ color: l.includes("⚠") ? "#ff6b6b" : l.includes("✓") ? "#10b981" : l.includes("LUẬT") ? "#f59e0b" : l.includes("SỰ CỐ") ? "#ef4444" : "inherit", marginBottom: "8px" }}>{l}</div>
+            <div className="psim-cinema-decisions">
+              {ce.options.map((opt, i) => (
+                <DecisionCard
+                  key={`${ce.id}-${i}`}
+                  option={opt}
+                  index={i}
+                  disabled={transitioning}
+                  onHover={() => SFX.hover()}
+                  onSelect={() => handleChoice(opt)}
+                />
               ))}
-              {gameState === "playing" && <div style={{ color: "#3b82f6" }}>› <span className="blink">▌</span></div>}
             </div>
           </div>
-        </aside>
+        )}
+
+        {/* BLACK SWAN */}
+        {gameState === "blackswan" && currentBlackSwan && (
+          <div className="psim-cinema-playing" aria-live="assertive">
+            <div className="psim-cinema-event-info">
+              <div className="psim-cinema-badges">
+                <span className="psim-crisis-label">⚠ THIÊN NGA ĐEN</span>
+              </div>
+              <h1 className="psim-cinema-title">{currentBlackSwan.title} {currentBlackSwan.emoji}</h1>
+              <p className="psim-cinema-desc">{currentBlackSwan.desc || currentBlackSwan.description}</p>
+              <ImpactPreview impact={currentBlackSwan.impact} showZero={false} />
+            </div>
+            <div className="psim-cinema-decisions psim-cinema-decisions--single">
+              <button
+                className="psim-crisis-button"
+                type="button"
+                disabled={transitioning}
+                onClick={handleBlackSwanAck}
+                onMouseOver={() => SFX.hover()}
+              >
+                {getFeedbackTone(currentBlackSwan.impact) === "good"
+                  ? "✓ TIẾP NHẬN CƠ HỘI"
+                  : "⚡ KÍCH HOẠT QUY TRÌNH CHỐNG CHỊU"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* POLICY */}
+        {gameState === "policy" && (
+          <div className="psim-cinema-policy">
+            <div className="psim-policy-label">⚖ PHIÊN HỌP CHÍNH SÁCH · QUÝ {quarter}</div>
+            <h1 className="psim-cinema-title">Ban hành Nghị quyết Vĩ mô</h1>
+            <p className="psim-cinema-desc" style={{ marginBottom: "24px" }}>Chọn 1 đạo luật. Hiệu lực kéo dài đến hết nhiệm kỳ.</p>
+            <div className="psim-policy-grid">
+              {MACRO_POLICIES.filter(p => !activePolicies.includes(p.id)).map(p => (
+                <button key={p.id} className="psim-policy-card" type="button" onClick={() => handlePolicy(p)} onMouseOver={() => SFX.hover()}>
+                  <div className="psim-policy-card-head">
+                    <span>{p.icon}</span>
+                    <strong>{p.title}</strong>
+                  </div>
+                  <p>{p.desc}</p>
+                  <small>{p.effect}</small>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* END SCREEN */}
+        {(gameState.startsWith("gameover") || gameState.startsWith("won")) && (
+          <div className="psim-cinema-endscreen">
+            <EndScreen />
+          </div>
+        )}
+
       </div>
     </div>
   );
