@@ -303,22 +303,6 @@ const RESEARCH_LINKS = [
       "Trang tổng hợp các báo cáo thường niên của Tập đoàn Công nghiệp — Năng lượng Quốc gia Việt Nam: đóng góp ngân sách, sản lượng khai thác, chiến lược chuyển dịch.",
     href: "https://www.pvn.vn/Pages/baocaothuongnien.aspx?catid=D85EBBC6-4BB6-4111-B500-0EFA472B64EB",
     source: "pvn.vn"
-  },
-  {
-    label: "Quốc tế",
-    title: "World Bank — Reform of State-Owned Enterprises in Viet Nam (PDF)",
-    description:
-      "Báo cáo chuyên đề về cải cách DNNN Việt Nam: minh bạch, hiệu quả vốn, khuyến nghị quản trị theo chuẩn OECD và lộ trình cổ phần hóa.",
-    href: "https://state-owned-enterprises.worldbank.org/sites/soe/files/reports/REFORM%20OF%20STATE-OWNED%20ENTERPRISES%20IN%20VIET%20NAM%20TO%20INCREASE%20PERFORMANCE%20AND%20PROFIT.pdf",
-    source: "worldbank.org (PDF)"
-  },
-  {
-    label: "Thực tiễn",
-    title: "Tuổi Trẻ — \"Dân vẫn chưa được chọn nhà bán lẻ điện\" (09/2025)",
-    description:
-      "Bài báo cập nhật lộ trình thị trường bán lẻ điện cạnh tranh, vì sao EVN vẫn là đơn vị duy nhất và các vướng mắc ở khâu tách bạch phát — truyền tải — bán lẻ.",
-    href: "https://tuoitre.vn/dan-van-chua-duoc-chon-nha-ban-le-dien-2025090821471906.htm",
-    source: "tuoitre.vn"
   }
 ];
 
