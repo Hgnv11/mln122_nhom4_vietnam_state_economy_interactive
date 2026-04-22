@@ -1625,6 +1625,47 @@ function App() {
           </div>
         </section>
 
+        <section className="research" id="ai-usage">
+          <div className="container">
+            <div className="section-head" data-reveal="">
+              <p className="section-tag">Phần bổ sung · Quy trình thực hiện</p>
+              <h2 className="section-title">AI Usage</h2>
+              <p className="section-sub">
+                Các công cụ AI được sử dụng với vai trò hỗ trợ trong quá trình nghiên cứu và phát triển sản phẩm:
+              </p>
+            </div>
+
+            <div className="research-grid" data-reveal="">
+              <article className="research-card">
+                <h4>NotebookLM — Vai trò</h4>
+                <p>
+                  • Nghiên cứu và hệ thống hóa nội dung từ giáo trình Kinh tế chính trị Mác – Lênin; hỗ trợ xây dựng
+                  cấu trúc kiến thức.
+                </p>
+              </article>
+
+              <article className="research-card">
+                <h4>Claude — Vai trò</h4>
+                <p>
+                  • Hỗ trợ thiết kế landing page và cấu trúc giao diện website; tổng hợp thông tin tham khảo về các
+                  tập đoàn (EVN, PVN, VNPT).
+                </p>
+              </article>
+
+              <article className="research-card">
+                <h4>Gemini — Vai trò</h4>
+                <p>• Tạo hình ảnh minh họa cho mini-game và hỗ trợ tìm kiếm thông tin.</p>
+              </article>
+
+              <article className="research-card">
+                <h4>Kiểm chứng & trách nhiệm</h4>
+                <p>• Nội dung được kiểm chứng lại bằng giáo trình và nguồn chính thống trước khi sử dụng.</p>
+                <p>• Nhóm chịu trách nhiệm hoàn toàn về nội dung cuối cùng.</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
         <section className="conclusion" id="ketluan">
           <div className="container">
             <div className="conclusion-box" data-reveal="">
